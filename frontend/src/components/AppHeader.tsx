@@ -1,14 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import {
   Truck,
   Shield,
   Activity,
   Layers,
   FileCode,
-  User,
-  LogOut,
-  Settings,
-  ChevronDown,
   RotateCcw,
 } from "lucide-react";
 
@@ -18,19 +14,6 @@ interface AppHeaderProps {
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) => {
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, []);
-
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white shrink-0 px-6 py-3.5 shadow-md z-30 select-none">
       <div className="flex items-center justify-between gap-6">
@@ -62,7 +45,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
           </div>
         )}
 
-        {/* Right Navigation & User Controls */}
+        {/* Right Navigation Controls */}
         <div className="flex items-center gap-2.5 text-xs">
           {/* Service Status Badges */}
           <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 h-9 rounded-md border border-slate-700/60">
@@ -98,67 +81,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
             <Shield className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-xs">Safety Rules</span>
           </button>
-
-          {/* User Profile Menu (Uniform Height & Styling) */}
-          <div className="relative" ref={userMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3 h-9 rounded-md border border-slate-700 transition-colors cursor-pointer text-xs font-semibold"
-            >
-              <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-xs">
-                MV
-              </div>
-              <span className="hidden sm:inline font-bold">Marcus Vance</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-
-            {isUserMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-lg shadow-xl border border-slate-200 text-slate-800 py-1 z-50 text-xs">
-                <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
-                  <p className="font-bold text-slate-900 text-xs">Marcus Vance</p>
-                  <p className="text-[10px] text-slate-500 font-mono">Senior Freight Dispatcher</p>
-                  <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">● Dispatch Station Active</p>
-                </div>
-
-                <div className="py-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center gap-2 text-slate-700 cursor-pointer"
-                  >
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Dispatcher Profile</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      onOpenRules();
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center gap-2 text-slate-700 cursor-pointer"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Safety Threshold Settings</span>
-                  </button>
-                </div>
-
-                <div className="border-t border-slate-100 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      alert("You have been signed out of the dispatch console.");
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer font-semibold"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-red-500" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </header>
