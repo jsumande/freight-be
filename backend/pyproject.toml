@@ -11,6 +11,7 @@ dependencies = [
     "drf-spectacular>=0.30.0",
     "pytest>=8.0.0",
     "pytest-django>=4.9.0",
+    "python-dotenv>=1.2.4",
     "requests>=2.31.0",
 ]
 

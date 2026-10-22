@@ -146,7 +146,11 @@ class GoogleDirectionsRoutingService:
         status = data.get("status")
         if status != "OK":
             err_msg = data.get("error_message", f"Google returned status {status}")
-            raise RoutingError(f"Google Directions error ({status}): {err_msg}")
+            logger.warning("Google Directions error (%s): %s. Falling back to OSRM provider.", status, err_msg)
+            # Graceful fallback to OSRM if Google Maps billing is disabled or request denied
+            fallback_osrm = OSRMRoutingService()
+            routes, osrm_msg = fallback_osrm.get_route_alternatives(start_lat, start_lon, end_lat, end_lon, timeout)
+            return routes, f"Google Maps returned ({status}: {err_msg[:80]}...). Seamlessly operating via OSRM fallback: {osrm_msg}"
 
         raw_routes = data.get("routes", [])
         if not raw_routes:
