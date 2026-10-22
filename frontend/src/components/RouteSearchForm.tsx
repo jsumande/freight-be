@@ -71,7 +71,7 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-900 leading-tight">Trip & Cargo Parameters</h2>
-            <p className="text-[11px] text-slate-400">Configure origin, route boundaries & vehicle physics</p>
+            <p className="text-[11px] text-slate-500">Enter your route, departure schedule, and cargo weight</p>
           </div>
         </div>
       </div>
