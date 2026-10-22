@@ -97,32 +97,36 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
         </div>
       </div>
 
-      {/* Origin & Destination Autocomplete Inputs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <AddressAutocompleteInput
-          label="Origin Location"
-          value={origin}
-          onChange={(val) => setOrigin(val)}
-          placeholder="Type address, city or click Pin..."
-          icon={<Navigation className="w-3.5 h-3.5 text-emerald-600" />}
-          onTogglePickOnMap={() => onTogglePickOnMap("origin")}
-          isPickingOnMap={isPickingOnMap === "origin"}
-        />
+      {/* 4 Core Parameters (1 Full Row Each - Not Divided) */}
+      <div className="space-y-4">
+        {/* Row 1: Origin Location */}
+        <div className="w-full">
+          <AddressAutocompleteInput
+            label="Origin Location"
+            value={origin}
+            onChange={(val) => setOrigin(val)}
+            placeholder="Type address, city or click Pin..."
+            icon={<Navigation className="w-3.5 h-3.5 text-emerald-600" />}
+            onTogglePickOnMap={() => onTogglePickOnMap("origin")}
+            isPickingOnMap={isPickingOnMap === "origin"}
+          />
+        </div>
 
-        <AddressAutocompleteInput
-          label="Destination Location"
-          value={destination}
-          onChange={(val) => setDestination(val)}
-          placeholder="Type address, city or click Pin..."
-          icon={<Navigation className="w-3.5 h-3.5 text-rose-600" />}
-          onTogglePickOnMap={() => onTogglePickOnMap("destination")}
-          isPickingOnMap={isPickingOnMap === "destination"}
-        />
-      </div>
+        {/* Row 2: Destination Location */}
+        <div className="w-full">
+          <AddressAutocompleteInput
+            label="Destination Location"
+            value={destination}
+            onChange={(val) => setDestination(val)}
+            placeholder="Type address, city or click Pin..."
+            icon={<Navigation className="w-3.5 h-3.5 text-rose-600" />}
+            onTogglePickOnMap={() => onTogglePickOnMap("destination")}
+            isPickingOnMap={isPickingOnMap === "destination"}
+          />
+        </div>
 
-      {/* Departure Time & Cargo Weight */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        {/* Row 3: Departure Date & Time */}
+        <div className="w-full">
           <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-slate-500" /> Departure Date & Time
           </label>
@@ -135,7 +139,8 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
           />
         </div>
 
-        <div>
+        {/* Row 4: Cargo Weight (lbs) */}
+        <div className="w-full">
           <div className="flex justify-between items-center mb-1.5">
             <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
               <Weight className="w-3.5 h-3.5 text-slate-500" /> Cargo Weight (lbs)
