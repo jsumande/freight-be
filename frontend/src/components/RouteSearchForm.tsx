@@ -62,29 +62,34 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4">
+    <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-2">
-          <Truck className="w-5 h-5 text-blue-600" />
-          <h2 className="text-base font-bold text-slate-900">Trip & Cargo Parameters</h2>
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+            <Truck className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 leading-tight">Trip & Cargo Parameters</h2>
+            <p className="text-[11px] text-slate-400">Configure origin, route boundaries & vehicle physics</p>
+          </div>
         </div>
-        <span className="text-xs text-slate-500 font-mono">Commercial Dispatch</span>
+        <span className="text-xs text-slate-500 font-mono bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">Dispatch Station</span>
       </div>
 
       {/* Quick Corridor Presets */}
       <div>
-        <div className="text-xs font-semibold text-slate-500 mb-1.5 flex items-center justify-between">
+        <div className="text-xs font-semibold text-slate-500 mb-2 flex items-center justify-between">
           <span>Preset Test Corridors</span>
           <span className="text-[11px] text-slate-400">Click to autofill</span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {PRESET_CORRIDORS.map((p) => (
             <button
               key={p.name}
               type="button"
               onClick={() => applyPreset(p)}
-              className="text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 px-2.5 py-1 rounded transition-colors"
+              className="text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
               {p.name}
             </button>
@@ -93,7 +98,7 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
       </div>
 
       {/* Origin & Destination Autocomplete Inputs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <AddressAutocompleteInput
           label="Origin Location"
           value={origin}
@@ -116,9 +121,9 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
       </div>
 
       {/* Departure Time & Cargo Weight */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-slate-500" /> Departure Date & Time
           </label>
           <input
@@ -126,13 +131,13 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
             required
             value={departureTime}
             onChange={(e) => setDepartureTime(e.target.value)}
-            className="w-full text-xs px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="w-full text-xs px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
           />
         </div>
 
         <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
               <Weight className="w-3.5 h-3.5 text-slate-500" /> Cargo Weight (lbs)
             </label>
             <span className="text-xs font-mono font-bold text-blue-700">
@@ -146,17 +151,17 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
             step={500}
             value={cargoWeightLbs}
             onChange={(e) => setCargoWeightLbs(parseFloat(e.target.value) || 0)}
-            className="w-full text-xs px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="w-full text-xs px-3.5 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
           />
-          <div className="flex gap-1.5 mt-1.5">
+          <div className="flex gap-2 mt-2">
             {[20000, 32000, 42000, 75000].map((wt) => (
               <button
                 key={wt}
                 type="button"
                 onClick={() => setCargoWeightLbs(wt)}
-                className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                className={`text-[11px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
                   cargoWeightLbs === wt
-                    ? "bg-slate-800 text-white border-slate-800 font-bold"
+                    ? "bg-slate-800 text-white border-slate-800 font-bold shadow-xs"
                     : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                 }`}
               >
@@ -168,19 +173,19 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
       </div>
 
       {/* Checkpoint Spacing & Action Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-2.5">
           <Sliders className="w-3.5 h-3.5 text-slate-500" />
           <span className="text-xs font-semibold text-slate-700">Sampling Interval:</span>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {[10, 25, 50].map((val) => (
               <button
                 key={val}
                 type="button"
                 onClick={() => setIntervalMiles(val)}
-                className={`text-xs px-2.5 py-1 rounded transition-colors ${
+                className={`text-xs px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
                   intervalMiles === val
-                    ? "bg-blue-600 text-white font-bold"
+                    ? "bg-blue-600 text-white font-bold shadow-xs"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
@@ -193,15 +198,15 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow transition-all cursor-pointer"
+          className="inline-flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs sm:text-sm font-bold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer"
         >
           {isLoading ? (
             <>
-              <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Evaluating Weather Along Routes...
+              <RotateCcw className="w-4 h-4 animate-spin" /> Evaluating Weather Along Routes...
             </>
           ) : (
             <>
-              <Play className="w-3.5 h-3.5 fill-current" /> Evaluate Route Safety
+              <Play className="w-4 h-4 fill-current" /> Evaluate Route Safety
             </>
           )}
         </button>

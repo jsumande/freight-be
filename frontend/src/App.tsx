@@ -170,7 +170,7 @@ export function App() {
       {/* Main Operations Workspace: Split Screen Console */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         {/* Left Dispatch Control Panel (Form + Alternative Comparison) */}
-        <aside className="w-full lg:w-[410px] xl:w-[440px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col overflow-y-auto p-3.5 space-y-3.5 z-10 shadow-sm">
+        <aside className="w-full lg:w-[460px] xl:w-[500px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col overflow-y-auto p-5 lg:p-6 space-y-6 z-10 shadow-xs">
           {/* Trip & Cargo Planning Form */}
           <RouteSearchForm
             origin={origin}
@@ -211,44 +211,46 @@ export function App() {
         </aside>
 
         {/* Right Geographic Analysis Workspace */}
-        <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-100 min-w-0">
+        <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-100 min-w-0 p-5 lg:p-6 space-y-4">
           {/* Top Banner Area: Error Alert & Dispatch Recommendation */}
-          <div className="p-3 pb-0 space-y-2 shrink-0 z-10">
-            {/* Error Banner */}
-            {errorMessage && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded-md shadow-sm text-red-900 flex items-start justify-between">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-xs">Evaluation Error</h4>
-                    <p className="text-[11px] text-red-800 mt-0.5">{errorMessage}</p>
+          {(errorMessage || (data && data.recommendation)) && (
+            <div className="space-y-3 shrink-0 z-10">
+              {/* Error Banner */}
+              {errorMessage && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl shadow-sm text-red-950 flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-sm">Evaluation Error</h4>
+                      <p className="text-xs text-red-800 mt-1 leading-relaxed">{errorMessage}</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage(null)}
+                    className="text-xs text-red-700 hover:text-red-900 font-bold ml-3 cursor-pointer"
+                  >
+                    Dismiss
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setErrorMessage(null)}
-                  className="text-xs text-red-700 hover:text-red-900 font-bold ml-2 cursor-pointer"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
+              )}
 
-            {/* Recommendation / Critical No-Travel Banner */}
-            {data && data.recommendation && (
-              <RecommendationBanner
-                verdict={data.recommendation}
-                recommendedRoute={
-                  data.routes.find((r) => r.id === data.recommendation.recommended_route_id) ||
-                  data.routes[0]
-                }
-                limitations={data.limitations}
-              />
-            )}
-          </div>
+              {/* Recommendation / Critical No-Travel Banner */}
+              {data && data.recommendation && (
+                <RecommendationBanner
+                  verdict={data.recommendation}
+                  recommendedRoute={
+                    data.routes.find((r) => r.id === data.recommendation.recommended_route_id) ||
+                    data.routes[0]
+                  }
+                  limitations={data.limitations}
+                />
+              )}
+            </div>
+          )}
 
           {/* Interactive Map & Overlaid Checkpoint Inspector */}
-          <div className="flex-1 relative p-3 min-h-[350px] overflow-hidden">
+          <div className="flex-1 relative min-h-[380px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
             <RouteMap
               routes={data ? data.routes : []}
               selectedRouteId={selectedRouteId}
@@ -270,7 +272,7 @@ export function App() {
 
           {/* Bottom Docked 48-Hour Forecast Horizon Control */}
           {data && (
-            <div className="px-3 pb-3 shrink-0 z-10">
+            <div className="shrink-0 z-10">
               <ForecastSlider
                 offsetHours={timelineOffset}
                 onChangeOffset={handleTimelineChange}

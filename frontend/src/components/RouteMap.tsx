@@ -350,7 +350,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
       {/* Location Picking Mode Banner */}
       {isPickingLocation && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-rose-600 text-white px-4 py-2 rounded-full shadow-lg border border-white flex items-center gap-3 text-xs font-bold animate-bounce">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-rose-600 text-white px-5 py-2.5 rounded-full shadow-xl border border-white flex items-center gap-3.5 text-xs font-bold animate-bounce">
           <span>
             📍 Click anywhere on the map to set{" "}
             {isPickingLocation === "origin" ? "Origin (Point A)" : "Destination (Point B)"}
@@ -359,7 +359,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
             <button
               type="button"
               onClick={onCancelPickLocation}
-              className="bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer"
+              className="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -368,10 +368,10 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       )}
 
       {/* Floating Top-Right Overlay Selector */}
-      <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1.5 rounded-lg shadow-md border border-slate-200 text-xs">
-        <div className="flex items-center justify-between mb-1 px-1">
-          <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
-            <Layers className="w-3 h-3 text-blue-600" /> Corridor Overlay
+      <div className="absolute top-4 right-4 z-[1000] bg-white/95 backdrop-blur-md p-2 rounded-xl shadow-lg border border-slate-200 text-xs">
+        <div className="flex items-center justify-between mb-1.5 px-1">
+          <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-blue-600" /> Corridor Overlay
           </div>
           <button
             type="button"
@@ -380,18 +380,18 @@ export const RouteMap: React.FC<RouteMapProps> = ({
                 mapInstanceRef.current.fitBounds(currentBoundsRef.current, { padding: [40, 40], maxZoom: 14 });
               }
             }}
-            className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 cursor-pointer bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded transition-colors"
+            className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-colors"
             title="Reset map zoom to fit all routes"
           >
-            <Maximize2 className="w-2.5 h-2.5" />
+            <Maximize2 className="w-3 h-3" />
             <span>Fit Route</span>
           </button>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           <button
             type="button"
             onClick={() => setOverlayMode("risk")}
-            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${
               overlayMode === "risk"
                 ? "bg-blue-600 text-white shadow-xs"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700"
@@ -405,7 +405,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
           <button
             type="button"
             onClick={() => setOverlayMode("wind")}
-            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${
               overlayMode === "wind"
                 ? "bg-cyan-600 text-white shadow-xs"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700"
@@ -419,7 +419,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
           <button
             type="button"
             onClick={() => setOverlayMode("precip")}
-            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${
               overlayMode === "precip"
                 ? "bg-indigo-600 text-white shadow-xs"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700"
@@ -433,7 +433,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
           <button
             type="button"
             onClick={() => setOverlayMode("none")}
-            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${
               overlayMode === "none"
                 ? "bg-slate-800 text-white shadow-xs"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700"
@@ -447,8 +447,8 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       </div>
 
       {/* Floating Bottom-Left Map Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md px-3 py-2.5 rounded-lg shadow-md border border-slate-200 text-xs text-slate-700 pointer-events-auto">
-        <div className="font-semibold text-slate-900 mb-1.5 flex items-center justify-between">
+      <div className="absolute bottom-5 left-5 z-[1000] bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-200 text-xs text-slate-700 pointer-events-auto">
+        <div className="font-semibold text-slate-900 mb-2 flex items-center justify-between">
           <span>
             {overlayMode === "wind"
               ? "Wind Speed Gradient"
@@ -459,79 +459,79 @@ export const RouteMap: React.FC<RouteMapProps> = ({
         </div>
 
         {overlayMode === "wind" ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#38bdf8] inline-block" />
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#38bdf8] inline-block shadow-2xs" />
               <span>&lt; 15 mph</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block shadow-2xs" />
               <span>15–25 mph</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-amber-500 inline-block shadow-2xs" />
               <span>25–35 mph</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-orange-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block shadow-2xs" />
               <span>35–45 mph</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-red-500 inline-block shadow-2xs" />
               <span>45–55 mph</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300 shadow-2xs" />
               <span className="font-bold text-red-950">&ge; 55 mph</span>
             </div>
           </div>
         ) : overlayMode === "precip" ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#94a3b8] inline-block" />
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#94a3b8] inline-block shadow-2xs" />
               <span>Dry / Clear</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#38bdf8] inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#38bdf8] inline-block shadow-2xs" />
               <span>Light (&lt;0.10 in)</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#6366f1] inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#6366f1] inline-block shadow-2xs" />
               <span>0.10–0.25 in</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#8b5cf6] inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#8b5cf6] inline-block shadow-2xs" />
               <span>0.25–0.50 in</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#ec4899] inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#ec4899] inline-block shadow-2xs" />
               <span>0.50–1.00 in</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-[#991b1b] inline-block ring-2 ring-red-300" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#991b1b] inline-block ring-2 ring-red-300 shadow-2xs" />
               <span className="font-bold text-red-950">&gt; 1.00 in/hr</span>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block shadow-2xs" />
               <span>Low Risk</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-amber-500 inline-block shadow-2xs" />
               <span>Moderate</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-orange-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block shadow-2xs" />
               <span>High Risk</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-red-500 inline-block shadow-2xs" />
               <span>Severe</span>
             </div>
-            <div className="flex items-center gap-1.5 col-span-2">
-              <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300" />
+            <div className="flex items-center gap-2 col-span-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300 shadow-2xs" />
               <span className="font-semibold text-red-950">No Travel (&ge;55 mph / weight override)</span>
             </div>
           </div>

@@ -32,23 +32,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
   }, []);
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white shrink-0 px-4 py-2.5 shadow-md z-30 select-none">
-      <div className="flex items-center justify-between gap-4">
+    <header className="bg-slate-900 border-b border-slate-800 text-white shrink-0 px-6 py-3.5 shadow-md z-30 select-none">
+      <div className="flex items-center justify-between gap-6">
         {/* Brand / Application Identity */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md">
-            <Truck className="w-4 h-4 text-white" />
+        <div className="flex items-center gap-3.5">
+          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shrink-0">
+            <Truck className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <h1 className="text-sm font-extrabold tracking-tight leading-none text-white">
                 WEATHER-AWARE TRUCK ROUTING
               </h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-950 text-blue-400 border border-blue-800/80 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-950 text-blue-400 border border-blue-800/80 px-2 py-0.5 rounded">
                 Console v2.0
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5 leading-none font-medium">
+            <p className="text-xs text-slate-400 mt-1 leading-none font-medium">
               Commercial Freight Dispatch & Rollover Risk Prevention
             </p>
           </div>
@@ -56,25 +56,25 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
 
         {/* Center Live Calculation Indicator (when active) */}
         {isLoading && (
-          <div className="hidden md:flex items-center gap-2 bg-blue-950/80 border border-blue-700/60 text-blue-300 px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
-            <RotateCcw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+          <div className="hidden md:flex items-center gap-2.5 bg-blue-950/80 border border-blue-700/60 text-blue-300 px-4 py-1.5 rounded-full text-xs font-semibold animate-pulse shadow-sm">
+            <RotateCcw className="w-4 h-4 animate-spin text-blue-400 shrink-0" />
             <span>Evaluating route alternatives & weather hazards...</span>
           </div>
         )}
 
         {/* Right Navigation & User Controls */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-3 text-xs">
           {/* Service Status Badges */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60">
+          <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700/60">
             <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-slate-300 text-[11px]">OSRM Engine:</span>
-            <span className="font-semibold text-white text-[11px]">Live</span>
+            <span className="text-slate-300 text-xs">OSRM Engine:</span>
+            <span className="font-semibold text-white text-xs">Live</span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60">
+          <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700/60">
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-300 text-[11px]">Open-Meteo:</span>
-            <span className="font-semibold text-white text-[11px]">Live</span>
+            <span className="text-slate-300 text-xs">Open-Meteo:</span>
+            <span className="font-semibold text-white text-xs">Live</span>
           </div>
 
           {/* Swagger API Docs Link */}
@@ -82,21 +82,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
             href="http://127.0.0.1:4040/api/docs/"
             target="_blank"
             rel="noreferrer"
-            className="hidden sm:inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 py-1.5 rounded-md border border-slate-700 transition-colors"
             title="Open OpenAPI 3.0 / Swagger UI"
           >
             <FileCode className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-[11px]">API Docs</span>
+            <span className="text-xs">API Docs</span>
           </a>
 
           {/* Safety Rules Reference */}
           <button
             onClick={onOpenRules}
             type="button"
-            className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 py-1.5 rounded-md border border-slate-700 transition-colors cursor-pointer"
           >
             <Shield className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[11px]">Safety Rules</span>
+            <span className="text-xs">Safety Rules</span>
           </button>
 
           {/* User Profile Menu */}
@@ -104,16 +104,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
             <button
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2.5 py-1 rounded-md border border-slate-700 transition-colors cursor-pointer"
+              className="flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3 py-1.5 rounded-md border border-slate-700 transition-colors cursor-pointer"
             >
-              <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px]">
+              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                 MV
               </div>
               <div className="hidden sm:block text-left">
-                <div className="text-[11px] font-bold leading-none">Marcus Vance</div>
-                <div className="text-[9px] text-slate-400 leading-none mt-0.5">Fleet Ops #4</div>
+                <div className="text-xs font-bold leading-none">Marcus Vance</div>
+                <div className="text-[10px] text-slate-400 leading-none mt-1">Fleet Ops #4</div>
               </div>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </button>
 
             {isUserMenuOpen && (
