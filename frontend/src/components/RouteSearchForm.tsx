@@ -74,7 +74,6 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
             <p className="text-[11px] text-slate-400">Configure origin, route boundaries & vehicle physics</p>
           </div>
         </div>
-        <span className="text-xs text-slate-500 font-mono bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">Dispatch Station</span>
       </div>
 
       {/* Quick Corridor Presets */}
