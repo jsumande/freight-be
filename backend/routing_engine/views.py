@@ -7,7 +7,7 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 
 from routing_engine.serializers import (
     RouteCalculationRequestSerializer,
@@ -48,13 +48,13 @@ class LocationSearchView(APIView):
         description="Returns place/city suggestions based on map geocoding for interactive origin and destination search.",
         tags=["Routing & Weather Risk"],
         parameters=[
-            {
-                "name": "q",
-                "type": str,
-                "in": "query",
-                "required": True,
-                "description": "Location name, address, or partial search text (min 2 chars)",
-            }
+            OpenApiParameter(
+                name="q",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Location name, address, or partial search text (min 2 chars)",
+            )
         ],
         responses={
             200: OpenApiResponse(description="List of matching locations with coordinates and formatted names."),

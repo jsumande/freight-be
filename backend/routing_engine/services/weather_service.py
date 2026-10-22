@@ -10,6 +10,8 @@ from datetime import datetime, timezone, timedelta
 import logging
 from typing import Dict, Any, Optional, List, Tuple
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from routing_engine.domain.models import Coordinate, WeatherObservation
 
@@ -17,6 +19,12 @@ logger = logging.getLogger(__name__)
 
 # Weather cache: (rounded_lat, rounded_lon, date_str) -> raw open-meteo hourly payload
 _WEATHER_CACHE: Dict[Tuple[float, float, str], Dict[str, Any]] = {}
+
+# Resilient Session with retries and connection pooling
+_SESSION = requests.Session()
+_RETRIES = Retry(total=3, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
+_SESSION.mount("https://", HTTPAdapter(max_retries=_RETRIES, pool_connections=10, pool_maxsize=20))
+_SESSION.mount("http://", HTTPAdapter(max_retries=_RETRIES, pool_connections=10, pool_maxsize=20))
 
 WMO_WEATHER_CODES = {
     0: "Clear sky",
@@ -85,7 +93,7 @@ class OpenMeteoWeatherService:
         }
 
         try:
-            resp = requests.get(url, params=params, timeout=self.timeout)
+            resp = _SESSION.get(url, params=params, timeout=self.timeout)
             if resp.status_code != 200:
                 raise WeatherProviderError(f"Open-Meteo returned HTTP {resp.status_code}: {resp.text[:200]}")
             data = resp.json()

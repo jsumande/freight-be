@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4040
 // Dedicated Axios client instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 45000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -66,6 +66,9 @@ export async function fetchRouteEvaluation(params: CalculateRouteParams): Promis
         data.error ||
         (data.details ? JSON.stringify(data.details) : `Server error: ${error.response.status}`);
       throw new Error(message);
+    }
+    if (isAxiosError(error) && error.code === "ECONNABORTED") {
+      throw new Error("Route weather evaluation timed out. Please retry or choose a larger checkpoint interval (25 or 50 miles).");
     }
     if (isAxiosError(error) && error.request) {
       throw new Error("Unable to connect to the routing backend. Verify the Django server is running on port 4040.");

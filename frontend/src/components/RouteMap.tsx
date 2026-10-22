@@ -3,7 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RouteAlternative, RouteCheckpoint } from "../types";
 import { getRiskColor } from "../utils/colors";
-import { Flame, Wind, CloudRain, EyeOff, Layers } from "lucide-react";
+import { Flame, Wind, CloudRain, EyeOff, Layers, Maximize2 } from "lucide-react";
 
 interface RouteMapProps {
   routes: RouteAlternative[];
@@ -60,6 +60,17 @@ export const RouteMap: React.FC<RouteMapProps> = ({
   const polylinesLayerRef = useRef<L.LayerGroup | null>(null);
   const checkpointsLayerRef = useRef<L.LayerGroup | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const currentBoundsRef = useRef<L.LatLngBounds | null>(null);
+
+  // Auto-resize Leaflet on window or layout container resize
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      mapInstanceRef.current?.invalidateSize();
+    });
+    observer.observe(mapContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Overlay visualization mode (defaults to Risk Corridor Heatmap)
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("risk");
@@ -327,6 +338,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       }
     }
 
+    currentBoundsRef.current = bounds;
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
@@ -357,8 +369,23 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
       {/* Floating Top-Right Overlay Selector */}
       <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1.5 rounded-lg shadow-md border border-slate-200 text-xs">
-        <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 px-1 flex items-center gap-1">
-          <Layers className="w-3 h-3 text-blue-600" /> Corridor Overlay
+        <div className="flex items-center justify-between mb-1 px-1">
+          <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
+            <Layers className="w-3 h-3 text-blue-600" /> Corridor Overlay
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (mapInstanceRef.current && currentBoundsRef.current && currentBoundsRef.current.isValid()) {
+                mapInstanceRef.current.fitBounds(currentBoundsRef.current, { padding: [40, 40], maxZoom: 14 });
+              }
+            }}
+            className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 cursor-pointer bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded transition-colors"
+            title="Reset map zoom to fit all routes"
+          >
+            <Maximize2 className="w-2.5 h-2.5" />
+            <span>Fit Route</span>
+          </button>
         </div>
         <div className="flex gap-1">
           <button
