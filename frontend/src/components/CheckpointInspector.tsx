@@ -56,12 +56,14 @@ export const CheckpointInspector: React.FC<CheckpointInspectorProps> = ({
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold text-white shadow-xs shrink-0"
             style={{ backgroundColor: overallColor }}
           >
-            {index}
+            {index === 0 ? "A" : index}
           </span>
           <div>
-            <h4 className="text-sm font-bold leading-none">Checkpoint {index} Details</h4>
+            <h4 className="text-sm font-bold leading-none">
+              {index === 0 ? "Checkpoint 0 Details (Origin Departure)" : `Checkpoint ${index} Details`}
+            </h4>
             <p className="text-[11px] text-slate-400 mt-1 leading-none font-mono">
-              Mile {cumulative_miles.toFixed(1)} from Origin
+              {index === 0 ? "Trip Origin • Mile 0.0 Departure" : `Mile ${cumulative_miles.toFixed(1)} from Origin`}
             </p>
           </div>
         </div>

@@ -70,10 +70,7 @@ export function App() {
       if (response.routes.length > 0) {
         const topRoute = response.recommendation.recommended_route_id || response.routes[0].id;
         setSelectedRouteId(topRoute);
-        const active = response.routes.find((r) => r.id === topRoute) || response.routes[0];
-        if (active && active.checkpoints.length > 0) {
-          setSelectedCheckpoint(active.checkpoints[0]);
-        }
+        // Do not auto-select Checkpoint 0 so map remains clear on load
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to calculate routes and weather risks. Verify the routing backend is reachable.");
@@ -198,10 +195,6 @@ export function App() {
               selectedRouteId={selectedRouteId}
               onSelectRoute={(id) => {
                 setSelectedRouteId(id);
-                const route = data.routes.find((r) => r.id === id);
-                if (route && route.checkpoints.length > 0) {
-                  setSelectedCheckpoint(route.checkpoints[0]);
-                }
               }}
               recommendedRouteId={data.recommendation.recommended_route_id}
               allRoutesUnsafe={data.recommendation.all_routes_unsafe}
@@ -250,7 +243,7 @@ export function App() {
           )}
 
           {/* Interactive Map & Overlaid Checkpoint Inspector */}
-          <div className="flex-1 relative min-h-[380px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+          <div className="flex-1 relative min-h-[440px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
             <RouteMap
               routes={data ? data.routes : []}
               selectedRouteId={selectedRouteId}

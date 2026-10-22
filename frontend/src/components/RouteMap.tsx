@@ -3,7 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RouteAlternative, RouteCheckpoint } from "../types";
 import { getRiskColor } from "../utils/colors";
-import { Flame, Wind, CloudRain, EyeOff, Layers, Maximize2 } from "lucide-react";
+import { Flame, Wind, CloudRain, EyeOff, Layers, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface RouteMapProps {
   routes: RouteAlternative[];
@@ -74,6 +74,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
   // Overlay visualization mode (defaults to Risk Corridor Heatmap)
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("risk");
+  const [isLegendOpen, setIsLegendOpen] = useState<boolean>(true);
 
   // Handle map click when in location picking mode
   useEffect(() => {
@@ -253,6 +254,9 @@ export const RouteMap: React.FC<RouteMapProps> = ({
     // 3. Draw Checkpoint Pin Markers for selected route
     if (activeRoute && activeRoute.checkpoints) {
       activeRoute.checkpoints.forEach((cp) => {
+        // Point A (Origin) endpoint marker represents Checkpoint 0 cleanly without double-layering
+        if (cp.index === 0) return;
+
         const isSelected = selectedCheckpoint?.index === cp.index;
         const riskColor = getRiskColor(cp.risk.overall_risk);
         const hasNoTravel = cp.risk.overall_risk === "NO_TRAVEL";
@@ -316,25 +320,40 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       const endCoord = activeRoute.geometry.coordinates[activeRoute.geometry.coordinates.length - 1];
 
       if (startCoord) {
+        const originCp = activeRoute.checkpoints.find((c) => c.index === 0) || activeRoute.checkpoints[0];
+        const isSelected = selectedCheckpoint?.index === 0;
+        const originRiskColor = originCp ? getRiskColor(originCp.risk.overall_risk) : "#15803d";
         const originIcon = L.divIcon({
-          html: `<div style="background-color: #15803d; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);">A</div>`,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
+          html: `<div style="background-color: #15803d; color: white; border-radius: 50%; width: ${isSelected ? 28 : 24}px; height: ${isSelected ? 28 : 24}px; display: flex; align-items: center; justify-content: center; font-size: ${isSelected ? "13px" : "11px"}; font-weight: bold; border: ${isSelected ? "3px solid #ffffff" : "2px solid white"}; box-shadow: 0 2px 6px rgba(0,0,0,0.4); outline: 2px solid ${originRiskColor}; cursor: pointer;">A</div>`,
+          iconSize: [isSelected ? 28 : 24, isSelected ? 28 : 24],
+          iconAnchor: [isSelected ? 14 : 12, isSelected ? 14 : 12],
         });
-        markersLayerRef.current.addLayer(
-          L.marker([startCoord[1], startCoord[0]], { icon: originIcon }).bindTooltip("Origin")
-        );
+        const originMarker = L.marker([startCoord[1], startCoord[0]], { icon: originIcon });
+        originMarker.bindTooltip("Origin (Point A) • Departure Point");
+        if (originCp) {
+          originMarker.on("click", () => {
+            onSelectCheckpoint(originCp);
+          });
+        }
+        markersLayerRef.current.addLayer(originMarker);
       }
 
       if (endCoord) {
+        const lastCp = activeRoute.checkpoints[activeRoute.checkpoints.length - 1];
+        const isSelected = selectedCheckpoint?.index === lastCp?.index;
         const destIcon = L.divIcon({
-          html: `<div style="background-color: #b91c1c; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);">B</div>`,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
+          html: `<div style="background-color: #b91c1c; color: white; border-radius: 50%; width: ${isSelected ? 28 : 24}px; height: ${isSelected ? 28 : 24}px; display: flex; align-items: center; justify-content: center; font-size: ${isSelected ? "13px" : "11px"}; font-weight: bold; border: ${isSelected ? "3px solid #ffffff" : "2px solid white"}; box-shadow: 0 2px 6px rgba(0,0,0,0.4); cursor: pointer;">B</div>`,
+          iconSize: [isSelected ? 28 : 24, isSelected ? 28 : 24],
+          iconAnchor: [isSelected ? 14 : 12, isSelected ? 14 : 12],
         });
-        markersLayerRef.current.addLayer(
-          L.marker([endCoord[1], endCoord[0]], { icon: destIcon }).bindTooltip("Destination")
-        );
+        const destMarker = L.marker([endCoord[1], endCoord[0]], { icon: destIcon });
+        destMarker.bindTooltip("Destination (Point B)");
+        if (lastCp) {
+          destMarker.on("click", () => {
+            onSelectCheckpoint(lastCp);
+          });
+        }
+        markersLayerRef.current.addLayer(destMarker);
       }
     }
 
@@ -345,7 +364,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
   }, [routes, selectedRouteId, selectedCheckpoint, overlayMode, onSelectRoute, onSelectCheckpoint]);
 
   return (
-    <div className="relative w-full h-full min-h-[460px] rounded-lg overflow-hidden border border-slate-200 shadow-inner">
+    <div className="relative w-full h-full min-h-0 overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
       {/* Location Picking Mode Banner */}
@@ -447,93 +466,109 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       </div>
 
       {/* Floating Bottom-Left Map Legend */}
-      <div className="absolute bottom-5 left-5 z-[1000] bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-200 text-xs text-slate-700 pointer-events-auto">
-        <div className="font-semibold text-slate-900 mb-2 flex items-center justify-between">
-          <span>
-            {overlayMode === "wind"
-              ? "Wind Speed Gradient"
-              : overlayMode === "precip"
-              ? "Precipitation Gradient"
-              : "Hazard Risk Corridor Legend"}
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-slate-200 text-xs text-slate-700 pointer-events-auto max-w-[calc(100%-2rem)] transition-all">
+        <div
+          onClick={() => setIsLegendOpen(!isLegendOpen)}
+          className="px-3.5 py-2 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 rounded-xl select-none"
+        >
+          <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+            <span>
+              {overlayMode === "wind"
+                ? "Wind Speed Gradient"
+                : overlayMode === "precip"
+                ? "Precipitation Gradient"
+                : "Hazard Risk Corridor Legend"}
+            </span>
           </span>
+          <button
+            type="button"
+            className="text-slate-400 hover:text-slate-700 p-0.5 rounded transition-colors"
+            title={isLegendOpen ? "Collapse Legend" : "Expand Legend"}
+          >
+            {isLegendOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
-        {overlayMode === "wind" ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#38bdf8] inline-block shadow-2xs" />
-              <span>&lt; 15 mph</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block shadow-2xs" />
-              <span>15–25 mph</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-amber-500 inline-block shadow-2xs" />
-              <span>25–35 mph</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block shadow-2xs" />
-              <span>35–45 mph</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-red-500 inline-block shadow-2xs" />
-              <span>45–55 mph</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300 shadow-2xs" />
-              <span className="font-bold text-red-950">&ge; 55 mph</span>
-            </div>
-          </div>
-        ) : overlayMode === "precip" ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#94a3b8] inline-block shadow-2xs" />
-              <span>Dry / Clear</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#38bdf8] inline-block shadow-2xs" />
-              <span>Light (&lt;0.10 in)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#6366f1] inline-block shadow-2xs" />
-              <span>0.10–0.25 in</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#8b5cf6] inline-block shadow-2xs" />
-              <span>0.25–0.50 in</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#ec4899] inline-block shadow-2xs" />
-              <span>0.50–1.00 in</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#991b1b] inline-block ring-2 ring-red-300 shadow-2xs" />
-              <span className="font-bold text-red-950">&gt; 1.00 in/hr</span>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block shadow-2xs" />
-              <span>Low Risk</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-amber-500 inline-block shadow-2xs" />
-              <span>Moderate</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block shadow-2xs" />
-              <span>High Risk</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-red-500 inline-block shadow-2xs" />
-              <span>Severe</span>
-            </div>
-            <div className="flex items-center gap-2 col-span-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300 shadow-2xs" />
-              <span className="font-semibold text-red-950">No Travel (&ge;55 mph / weight override)</span>
-            </div>
+        {isLegendOpen && (
+          <div className="px-3.5 pb-3 pt-1 border-t border-slate-100">
+            {overlayMode === "wind" ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#38bdf8] inline-block shadow-2xs" />
+                  <span className="text-[11px]">&lt; 15 mph</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">15–25 mph</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">25–35 mph</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-orange-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">35–45 mph</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-red-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">45–55 mph</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300 shadow-2xs" />
+                  <span className="font-bold text-red-950 text-[11px]">&ge; 55 mph</span>
+                </div>
+              </div>
+            ) : overlayMode === "precip" ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#94a3b8] inline-block shadow-2xs" />
+                  <span className="text-[11px]">Dry / Clear</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#38bdf8] inline-block shadow-2xs" />
+                  <span className="text-[11px]">Light (&lt;0.10 in)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#6366f1] inline-block shadow-2xs" />
+                  <span className="text-[11px]">0.10–0.25 in</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#8b5cf6] inline-block shadow-2xs" />
+                  <span className="text-[11px]">0.25–0.50 in</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#ec4899] inline-block shadow-2xs" />
+                  <span className="text-[11px]">0.50–1.00 in</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#991b1b] inline-block ring-2 ring-red-300 shadow-2xs" />
+                  <span className="font-bold text-red-950 text-[11px]">&gt; 1.00 in/hr</span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">Low Risk</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">Moderate</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-orange-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">High Risk</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-red-500 inline-block shadow-2xs" />
+                  <span className="text-[11px]">Severe</span>
+                </div>
+                <div className="flex items-center gap-2 col-span-2">
+                  <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300 shadow-2xs" />
+                  <span className="font-semibold text-red-950 text-[11px]">No Travel (&ge;55 mph / weight override)</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
