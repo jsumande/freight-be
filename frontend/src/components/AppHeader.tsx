@@ -63,15 +63,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
         )}
 
         {/* Right Navigation & User Controls */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2.5 text-xs">
           {/* Service Status Badges */}
-          <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700/60">
+          <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 h-9 rounded-md border border-slate-700/60">
             <Activity className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-slate-300 text-xs">OSRM Engine:</span>
             <span className="font-semibold text-white text-xs">Live</span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700/60">
+          <div className="hidden lg:flex items-center gap-2 bg-slate-800/80 px-3 h-9 rounded-md border border-slate-700/60">
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-slate-300 text-xs">Open-Meteo:</span>
             <span className="font-semibold text-white text-xs">Live</span>
@@ -82,7 +82,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
             href="http://127.0.0.1:4040/api/docs/"
             target="_blank"
             rel="noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 py-1.5 rounded-md border border-slate-700 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 h-9 rounded-md border border-slate-700 transition-colors"
             title="Open OpenAPI 3.0 / Swagger UI"
           >
             <FileCode className="w-3.5 h-3.5 text-blue-400" />
@@ -93,26 +93,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
           <button
             onClick={onOpenRules}
             type="button"
-            className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 py-1.5 rounded-md border border-slate-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 h-9 rounded-md border border-slate-700 transition-colors cursor-pointer"
           >
             <Shield className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-xs">Safety Rules</span>
           </button>
 
-          {/* User Profile Menu */}
+          {/* User Profile Menu (Uniform Height & Styling) */}
           <div className="relative" ref={userMenuRef}>
             <button
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3 py-1.5 rounded-md border border-slate-700 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3 h-9 rounded-md border border-slate-700 transition-colors cursor-pointer text-xs font-semibold"
             >
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+              <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-xs">
                 MV
               </div>
-              <div className="hidden sm:block text-left">
-                <div className="text-xs font-bold leading-none">Marcus Vance</div>
-                <div className="text-[10px] text-slate-400 leading-none mt-1">Fleet Ops #4</div>
-              </div>
+              <span className="hidden sm:inline font-bold">Marcus Vance</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </button>
 
