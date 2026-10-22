@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type {
   RouteCalculationResponse,
   RouteCheckpoint,
@@ -6,6 +6,7 @@ import type {
 import {
   fetchRouteEvaluation,
   fetchTimelineUpdate,
+  extractApiErrorMessage,
 } from "./api";
 import type { CalculateRouteParams } from "./api";
 import { AppHeader } from "./components/AppHeader";
@@ -47,6 +48,19 @@ export function App() {
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRequestIdRef = useRef<number>(0);
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+  const timelineAbortControllerRef = useRef<AbortController | null>(null);
+
+  // Derived state
+  const selectedRoute = useMemo(() => {
+    if (!data) return null;
+    return data.routes.find((r) => r.id === selectedRouteId) ?? data.routes[0] ?? null;
+  }, [data, selectedRouteId]);
+
+  const recommendedRoute = useMemo(() => {
+    if (!data) return null;
+    return data.routes.find((r) => r.id === data.recommendation.recommended_route_id) ?? data.routes[0] ?? null;
+  }, [data]);
 
   const handleMapClickLocation = (lat: number, lon: number) => {
     const coordStr = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
@@ -58,28 +72,42 @@ export function App() {
     setIsPickingOnMap(null);
   };
 
-  const handleSearch = async (params: CalculateRouteParams) => {
+  const handleSearch = useCallback(async (params: CalculateRouteParams) => {
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    searchAbortControllerRef.current = controller;
+
     setIsLoading(true);
     setErrorMessage(null);
     setTimelineOffset(0);
     setSelectedCheckpoint(null);
 
     try {
-      const response = await fetchRouteEvaluation(params);
+      const response = await fetchRouteEvaluation(params, controller.signal);
+      if (controller.signal.aborted) return;
       setData(response);
       if (response.routes.length > 0) {
         const topRoute = response.recommendation.recommended_route_id || response.routes[0].id;
         setSelectedRouteId(topRoute);
-        // Do not auto-select Checkpoint 0 so map remains clear on load
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to calculate routes and weather risks. Verify the routing backend is reachable.");
+    } catch (err: unknown) {
+      if (controller.signal.aborted) return;
+      setErrorMessage(
+        extractApiErrorMessage(
+          err,
+          "Failed to calculate routes and weather risks. Verify the routing backend is reachable."
+        )
+      );
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, []);
 
-  // Initial calculation on mount
+  // Initial calculation on mount & cleanup on unmount
   useEffect(() => {
     handleSearch({
       origin: "Chicago, IL",
@@ -88,38 +116,51 @@ export function App() {
       cargo_weight_lbs: 35000,
       checkpoint_interval_miles: 25,
     });
-  }, []);
+
+    return () => {
+      searchAbortControllerRef.current?.abort();
+      timelineAbortControllerRef.current?.abort();
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, [handleSearch]);
 
   // Re-evaluates current route checkpoints when timeline slider changes
   const handleTimelineChange = useCallback(
     (offsetHours: number) => {
       setTimelineOffset(offsetHours);
 
-      if (!data || !selectedRouteId) return;
+      if (!data || !selectedRoute || selectedRoute.checkpoints.length === 0) return;
 
-      const currentRoute = data.routes.find((r) => r.id === selectedRouteId);
-      if (!currentRoute || currentRoute.checkpoints.length === 0) return;
+      const currentRoute = selectedRoute;
 
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+      }
+      if (timelineAbortControllerRef.current) {
+        timelineAbortControllerRef.current.abort();
       }
 
       setIsTimelineLoading(true);
       const reqId = ++activeRequestIdRef.current;
 
       debounceTimerRef.current = setTimeout(async () => {
+        const controller = new AbortController();
+        timelineAbortControllerRef.current = controller;
+
         try {
-          const update = await fetchTimelineUpdate({
-            offset_hours: offsetHours,
-            cargo_weight_lbs: data.query.cargo_weight_lbs,
-            total_distance_miles: currentRoute.distance_miles,
-            checkpoints: currentRoute.checkpoints,
-          });
+          const update = await fetchTimelineUpdate(
+            {
+              offset_hours: offsetHours,
+              cargo_weight_lbs: data.query.cargo_weight_lbs,
+              total_distance_miles: currentRoute.distance_miles,
+              checkpoints: currentRoute.checkpoints,
+            },
+            controller.signal
+          );
 
           // Discard stale responses
-          if (reqId !== activeRequestIdRef.current) return;
+          if (controller.signal.aborted || reqId !== activeRequestIdRef.current) return;
 
-          // Update route metrics and checkpoints in local state
           setData((prev) => {
             if (!prev) return null;
             const updatedRoutes = prev.routes.map((r) => {
@@ -144,16 +185,18 @@ export function App() {
             if (!prevCp) return null;
             return update.checkpoints.find((c) => c.index === prevCp.index) || null;
           });
-        } catch (err: any) {
-          console.error("Timeline update failed:", err);
+        } catch (err: unknown) {
+          if (!controller.signal.aborted) {
+            console.error("Timeline update failed:", extractApiErrorMessage(err));
+          }
         } finally {
-          if (reqId === activeRequestIdRef.current) {
+          if (!controller.signal.aborted && reqId === activeRequestIdRef.current) {
             setIsTimelineLoading(false);
           }
         }
       }, 350);
     },
-    [data, selectedRouteId]
+    [data, selectedRoute]
   );
 
   return (
@@ -232,10 +275,7 @@ export function App() {
               {data && data.recommendation && (
                 <RecommendationBanner
                   verdict={data.recommendation}
-                  recommendedRoute={
-                    data.routes.find((r) => r.id === data.recommendation.recommended_route_id) ||
-                    data.routes[0]
-                  }
+                  recommendedRoute={recommendedRoute}
                   limitations={data.limitations}
                 />
               )}

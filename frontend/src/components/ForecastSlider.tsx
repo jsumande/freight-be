@@ -15,15 +15,20 @@ export const ForecastSlider: React.FC<ForecastSliderProps> = ({
   isLoading,
 }) => {
   const formattedTargetTime = useMemo(() => {
-    const baseDate = baseDepartureTime ? new Date(baseDepartureTime) : new Date(0);
-    const simDate = new Date(baseDate.getTime() + offsetHours * 3600 * 1000);
-    return simDate.toLocaleString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const baseDate = baseDepartureTime ? new Date(baseDepartureTime) : new Date();
+    const validBaseTime = isNaN(baseDate.getTime()) ? Date.now() : baseDate.getTime();
+    const simDate = new Date(validBaseTime + offsetHours * 3600 * 1000);
+    try {
+      return simDate.toLocaleString([], {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return simDate.toISOString();
+    }
   }, [baseDepartureTime, offsetHours]);
 
   const quickPills = [0, 6, 12, 24, 36, 48];

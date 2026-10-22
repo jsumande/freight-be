@@ -61,6 +61,8 @@ export const RouteMap: React.FC<RouteMapProps> = ({
   const checkpointsLayerRef = useRef<L.LayerGroup | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const currentBoundsRef = useRef<L.LatLngBounds | null>(null);
+  const prevRouteIdRef = useRef<string | null>(null);
+  const hasInitialFitRef = useRef<boolean>(false);
 
   // Auto-resize Leaflet on window or layout container resize
   useEffect(() => {
@@ -358,8 +360,12 @@ export const RouteMap: React.FC<RouteMapProps> = ({
     }
 
     currentBoundsRef.current = bounds;
-    if (bounds.isValid()) {
+    const isNewRoute = prevRouteIdRef.current !== selectedRouteId;
+    prevRouteIdRef.current = selectedRouteId;
+
+    if (bounds.isValid() && (isNewRoute || !hasInitialFitRef.current)) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      hasInitialFitRef.current = true;
     }
   }, [routes, selectedRouteId, selectedCheckpoint, overlayMode, onSelectRoute, onSelectCheckpoint]);
 

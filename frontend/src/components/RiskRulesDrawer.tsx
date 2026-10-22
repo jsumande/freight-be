@@ -7,17 +7,37 @@ interface RiskRulesDrawerProps {
 }
 
 export const RiskRulesDrawer: React.FC<RiskRulesDrawerProps> = ({ isOpen, onClose }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[2000] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rules-modal-title"
+    >
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-400" />
-            <h3 className="font-bold text-base">Weather Hazard & Cargo-Weight Safety Rules</h3>
+            <h3 id="rules-modal-title" className="font-bold text-base">Weather Hazard & Cargo-Weight Safety Rules</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            aria-label="Close dialog"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

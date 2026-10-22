@@ -5,6 +5,8 @@ import { RouteComparison } from "../components/RouteComparison";
 import { CheckpointInspector } from "../components/CheckpointInspector";
 import { RecommendationBanner } from "../components/RecommendationBanner";
 import { ForecastSlider } from "../components/ForecastSlider";
+import { RiskRulesDrawer } from "../components/RiskRulesDrawer";
+import { extractApiErrorMessage } from "../api";
 import type { RouteAlternative, RouteCheckpoint, RecommendationVerdict } from "../types";
 
 describe("Frontend Component Suite", () => {
@@ -156,5 +158,58 @@ describe("Frontend Component Suite", () => {
     const plus12Btn = screen.getByText("+12h");
     fireEvent.click(plus12Btn);
     expect(onChange).toHaveBeenCalledWith(12);
+  });
+
+  it("handles missing or invalid departure time string safely in ForecastSlider", () => {
+    const onChange = vi.fn();
+    expect(() => {
+      render(
+        <ForecastSlider
+          offsetHours={4}
+          onChangeOffset={onChange}
+          baseDepartureTime="invalid-date-string"
+          isLoading={false}
+        />
+      );
+    }).not.toThrow();
+    expect(screen.getByText("48-Hour Forecast Horizon Timeline")).toBeDefined();
+  });
+
+  it("renders RiskRulesDrawer with accessibility attributes and responds to Escape key", () => {
+    const onClose = vi.fn();
+    render(<RiskRulesDrawer isOpen={true} onClose={onClose} />);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeDefined();
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("extractApiErrorMessage formats errors deterministically", () => {
+    // Normal Error object
+    expect(extractApiErrorMessage(new Error("Custom network failure"))).toBe("Custom network failure");
+
+    // Timeout code
+    expect(extractApiErrorMessage({ isAxiosError: true, code: "ECONNABORTED" } as any)).toContain(
+      "timed out"
+    );
+
+    // Cancelled request
+    expect(extractApiErrorMessage({ isAxiosError: true, code: "ERR_CANCELED" } as any)).toBe(
+      "Request was cancelled."
+    );
+
+    // Backend structured error response
+    expect(
+      extractApiErrorMessage({
+        isAxiosError: true,
+        response: { status: 400, data: { message: "Invalid waypoint coordinates." } },
+      } as any)
+    ).toBe("Invalid waypoint coordinates.");
+
+    // Unknown error fallback
+    expect(extractApiErrorMessage(null, "Default fallback")).toBe("Default fallback");
   });
 });

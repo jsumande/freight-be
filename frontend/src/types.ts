@@ -24,7 +24,7 @@ export interface CheckpointRisk {
   snow_risk: RiskLevel;
   weight_override_applied: boolean;
   override_reason: string | null;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface RouteCheckpoint {

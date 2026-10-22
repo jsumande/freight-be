@@ -40,12 +40,20 @@ export const CheckpointInspector: React.FC<CheckpointInspectorProps> = ({
 
   const { weather, risk, cumulative_miles, estimated_arrival_time, index } = checkpoint;
   const overallColor = getRiskColor(risk.overall_risk);
-  const formattedEta = new Date(estimated_arrival_time).toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedEta = React.useMemo(() => {
+    try {
+      const date = new Date(estimated_arrival_time);
+      if (isNaN(date.getTime())) return estimated_arrival_time || "--";
+      return date.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return estimated_arrival_time || "--";
+    }
+  }, [estimated_arrival_time]);
 
   return (
     <div className="absolute top-4 right-4 bottom-24 z-[1100] w-88 sm:w-96 bg-white/98 backdrop-blur-md border border-slate-300 rounded-2xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto transition-all animate-in fade-in slide-in-from-right-4 duration-200">

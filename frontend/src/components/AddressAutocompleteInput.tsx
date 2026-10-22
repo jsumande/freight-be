@@ -26,8 +26,9 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click and cleanup on unmount
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -35,7 +36,11 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
       }
     };
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,19 +50,34 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
     if (text.trim().length < 2) {
       setSuggestions([]);
       setIsOpen(false);
+      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     debounceTimerRef.current = setTimeout(async () => {
-      const results = await searchLocations(text);
-      setSuggestions(results);
-      setIsOpen(results.length > 0);
-      setIsLoading(false);
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      try {
+        const results = await searchLocations(text, controller.signal);
+        if (!controller.signal.aborted) {
+          setSuggestions(results);
+          setIsOpen(results.length > 0);
+        }
+      } catch {
+        // Silently handled by searchLocations
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
     }, 280);
   };
 
