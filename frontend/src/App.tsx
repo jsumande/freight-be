@@ -204,7 +204,7 @@ export function App() {
         </aside>
 
         {/* Right Geographic Analysis Workspace */}
-        <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-100 min-w-0 p-5 lg:p-6 space-y-4">
+        <main className="flex-1 flex flex-col relative overflow-y-auto overflow-x-hidden bg-slate-100 min-w-0 p-4 lg:p-5 space-y-3.5">
           {/* Top Banner Area: Error Alert & Dispatch Recommendation */}
           {(errorMessage || (data && data.recommendation)) && (
             <div className="space-y-3 shrink-0 z-10">
@@ -243,7 +243,7 @@ export function App() {
           )}
 
           {/* Interactive Map & Overlaid Checkpoint Inspector */}
-          <div className="flex-1 relative min-h-[440px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+          <div className="flex-1 relative min-h-[300px] lg:min-h-[340px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white shrink-0 sm:shrink">
             <RouteMap
               routes={data ? data.routes : []}
               selectedRouteId={selectedRouteId}
@@ -265,7 +265,7 @@ export function App() {
 
           {/* Bottom Docked 48-Hour Forecast Horizon Control */}
           {data && (
-            <div className="shrink-0 z-10">
+            <div className="shrink-0 z-10 pb-1">
               <ForecastSlider
                 offsetHours={timelineOffset}
                 onChangeOffset={handleTimelineChange}
