@@ -20,6 +20,6 @@ RUN uv sync --frozen || uv sync
 COPY . .
 
 # Run migrations and collect static on container startup
-EXPOSE 8000
+EXPOSE 4040
 
-CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:4040"]

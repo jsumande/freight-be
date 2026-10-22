@@ -121,6 +121,10 @@ class TestRouteAPIEndpoints:
         assert resp.json()["status"] == "healthy"
 
     def test_swagger_and_openapi_endpoints(self):
+        root_resp = self.client.get("/")
+        assert root_resp.status_code == 302
+        assert root_resp["Location"] == "/api/docs/"
+
         schema_resp = self.client.get("/api/schema/")
         assert schema_resp.status_code == 200
         assert "openapi" in schema_resp.content.decode()

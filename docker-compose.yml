@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: truck_routing_backend
     ports:
-      - "8000:8000"
+      - "4040:4040"
     environment:
       - DJANGO_DEBUG=True
       - DJANGO_SECRET_KEY=production-secure-key-sample-replace-in-env

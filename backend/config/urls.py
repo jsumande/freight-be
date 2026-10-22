@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -7,6 +8,9 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    # Default landing page redirects directly to Swagger UI
+    path("", RedirectView.as_view(url="/api/docs/", permanent=False), name="index-to-swagger"),
+
     path("admin/", admin.site.urls),
     path("api/", include("routing_engine.urls")),
 
