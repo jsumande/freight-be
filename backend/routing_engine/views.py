@@ -1,5 +1,5 @@
 """
-API Views for Weather-Aware Truck Routing
+API Views for Weather-Aware Truck Routing with OpenAPI / Swagger Documentation
 """
 
 from datetime import datetime, timezone, timedelta
@@ -7,6 +7,7 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from routing_engine.serializers import (
     RouteCalculationRequestSerializer,
@@ -25,6 +26,13 @@ logger = logging.getLogger(__name__)
 
 class HealthCheckView(APIView):
     """Basic health check to verify backend operational status."""
+
+    @extend_schema(
+        summary="Service Health Check",
+        description="Returns operational status of the Weather-Aware Truck Routing API.",
+        tags=["System"],
+        responses={200: OpenApiResponse(description="API is operating normally")},
+    )
     def get(self, request):
         return Response({"status": "healthy", "service": "weather-aware-truck-routing-api"})
 
@@ -32,9 +40,26 @@ class HealthCheckView(APIView):
 class RouteCalculationView(APIView):
     """
     POST /api/routes/calculate/
-    Evaluates truck routes based on live weather hazards, cargo weight overrides,
+    Evaluates commercial truck routes based on forecasted weather hazards, cargo weight overrides,
     and returns ranked route alternatives.
     """
+
+    @extend_schema(
+        summary="Calculate and Rank Weather-Aware Routes",
+        description=(
+            "Calculates up to 3 distinct viable route alternatives between origin and destination, "
+            "samples checkpoints at 10, 25, or 50 mile intervals, extracts forecast weather metrics, "
+            "evaluates cargo-weight rollover risk overrides, and returns deterministically ranked routes."
+        ),
+        tags=["Routing & Weather Risk"],
+        request=RouteCalculationRequestSerializer,
+        responses={
+            200: OpenApiResponse(description="Evaluated and ranked route alternatives with risk metrics."),
+            400: OpenApiResponse(description="Validation error or address geocoding failure."),
+            502: OpenApiResponse(description="Upstream routing or weather provider connection error."),
+            500: OpenApiResponse(description="Internal processing error."),
+        },
+    )
     def post(self, request):
         serializer = RouteCalculationRequestSerializer(data=request.data)
         if not serializer.is_valid():
@@ -89,6 +114,20 @@ class ForecastTimelineView(APIView):
     Re-evaluates checkpoint weather conditions and risk levels for an offset in hours (0 to 48 hours).
     Updates checkpoint risks and re-aggregates route metrics.
     """
+
+    @extend_schema(
+        summary="Re-evaluate Route at Forecast Horizon Offset",
+        description=(
+            "Re-evaluates checkpoint weather conditions and risk levels across the 48-hour forecast slider. "
+            "Updates checkpoint risks and re-aggregates route metrics without recalculating route geometry."
+        ),
+        tags=["Routing & Weather Risk"],
+        request=TimelineReevaluationRequestSerializer,
+        responses={
+            200: OpenApiResponse(description="Re-evaluated checkpoints and updated route metrics."),
+            400: OpenApiResponse(description="Validation error in payload."),
+        },
+    )
     def post(self, request):
         serializer = TimelineReevaluationRequestSerializer(data=request.data)
         if not serializer.is_valid():

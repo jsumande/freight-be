@@ -15,7 +15,7 @@ A full-stack operational web application built with **Django REST Framework** an
                                            ▼
                     ┌──────────────────────────────────────────────┐
                     │          Django REST Framework API           │
-                    │         (/api/routes/calculate/)             │
+                    │  (/api/routes/calculate/, /api/docs/ Swagger)│
                     └──────┬───────────────┬────────────────┬──────┘
                            │               │                │
                            ▼               ▼                ▼
@@ -40,6 +40,12 @@ A full-stack operational web application built with **Django REST Framework** an
                            │  (1D Voronoi Mile Aggregator) │
                            └───────────────────────────────┘
 ```
+
+### OpenAPI & Interactive Swagger Documentation
+The backend exposes comprehensive OpenAPI 3.0 documentation generated dynamically via `drf-spectacular`:
+- **Interactive Swagger UI**: [`http://localhost:8000/api/docs/`](http://localhost:8000/api/docs/)
+- **Redoc Documentation**: [`http://localhost:8000/api/redoc/`](http://localhost:8000/api/redoc/)
+- **OpenAPI Schema (YAML/JSON)**: [`http://localhost:8000/api/schema/`](http://localhost:8000/api/schema/)
 
 ### Key Engineering Principles
 - **Separation of Concerns**: Pure domain risk evaluation (`risk_assessment.py` and `route_ranking.py`) is completely decoupled from I/O, database models, and network requests, enabling 100% boundary unit test coverage.

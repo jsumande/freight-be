@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Activity,
   Layers,
+  FileCode,
 } from "lucide-react";
 
 export function App() {
@@ -168,6 +169,16 @@ export function App() {
               <span className="text-slate-300">Open-Meteo:</span>
               <span className="font-semibold text-white">Live Hourly</span>
             </div>
+
+            <a
+              href="http://127.0.0.1:8000/api/docs/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-2.5 py-1 rounded-md border border-slate-700 transition-colors cursor-pointer"
+            >
+              <FileCode className="w-3.5 h-3.5 text-blue-400" />
+              <span>Swagger API</span>
+            </a>
 
             <button
               onClick={() => setIsRulesOpen(true)}

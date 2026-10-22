@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     "routing_engine",
 ]
 
@@ -95,4 +96,18 @@ REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# OpenAPI / Swagger Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Weather-Aware Commercial Freight Truck Routing API",
+    "DESCRIPTION": (
+        "Enterprise API for evaluating commercial truck routes against live weather hazards "
+        "(crosswinds, severe rainfall, snowfall) and cargo-weight physics overrides. "
+        "Calculates distance-weighted risk metrics and deterministic route recommendations."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }

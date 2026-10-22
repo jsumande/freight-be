@@ -120,6 +120,19 @@ class TestRouteAPIEndpoints:
         assert resp.status_code == 200
         assert resp.json()["status"] == "healthy"
 
+    def test_swagger_and_openapi_endpoints(self):
+        schema_resp = self.client.get("/api/schema/")
+        assert schema_resp.status_code == 200
+        assert "openapi" in schema_resp.content.decode()
+
+        docs_resp = self.client.get("/api/docs/")
+        assert docs_resp.status_code == 200
+        assert "SwaggerUIBundle" in docs_resp.content.decode()
+
+        redoc_resp = self.client.get("/api/redoc/")
+        assert redoc_resp.status_code == 200
+        assert "redoc" in redoc_resp.content.decode().lower()
+
     def test_calculate_validation_failure(self):
         # Missing required fields
         resp = self.client.post("/api/routes/calculate/", {}, format="json")
