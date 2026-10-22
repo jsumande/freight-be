@@ -13,6 +13,8 @@ from routing_engine.services.geocoding_service import geocode_location, Geocodin
 from routing_engine.services.routing_service import (
     haversine_distance_miles,
     are_routes_meaningfully_distinct,
+    decode_google_polyline,
+    GoogleDirectionsRoutingService,
     OSRMRoutingService,
     RoutingError,
 )
@@ -148,7 +150,7 @@ class TestRouteAPIEndpoints:
         assert "cargo_weight_lbs" in data["details"]
 
     @patch("routing_engine.services.orchestrator.geocode_location")
-    @patch("routing_engine.services.orchestrator.OSRMRoutingService.get_route_alternatives")
+    @patch("routing_engine.services.routing_service.OSRMRoutingService.get_route_alternatives")
     @patch("routing_engine.services.orchestrator.OpenMeteoWeatherService.get_observation_at_time")
     def test_calculate_route_end_to_end_mocked(self, mock_weather, mock_routes, mock_geocode):
         mock_geocode.side_effect = [

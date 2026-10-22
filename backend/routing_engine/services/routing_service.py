@@ -1,23 +1,23 @@
 """
-Routing Service Interface and OSRM Implementation
+Routing Service Interface, OSRM Implementation, and Google Maps Directions Provider
 
-Communicates with the OSRM routing engine to fetch real, distinct route alternatives.
+Communicates with routing providers (Google Maps Directions API or OSRM) to fetch real, distinct route alternatives.
 Preserves polyline geometry, cumulative distance, duration, and step-level annotations.
 Validates route uniqueness and honestly discloses the number of returned routes.
 """
 
 import logging
 import math
+import os
 from typing import List, Dict, Any, Tuple
 import requests
 
 logger = logging.getLogger(__name__)
 
 ROUTING_PROVIDER_LIMITATION = (
-    "Routing geometry and durations are computed using the Open Source Routing Machine (OSRM) "
-    "driving profile. Note: Routes reflect general road networks and passenger vehicle physics. "
-    "Commercial truck clearances (bridge heights, axle weight restrictions, HAZMAT bans) are not "
-    "enforced by this routing provider."
+    "Routing geometry and durations reflect standard highway networks. Commercial truck "
+    "clearance restrictions (bridge heights, gross weight ratings, and hazardous materials bans) "
+    "are not guaranteed unless specialized commercial truck restrictions are licensed."
 )
 
 METERS_TO_MILES = 0.000621371
@@ -43,6 +43,46 @@ def haversine_distance_miles(lat1: float, lon1: float, lat2: float, lon2: float)
     return r_miles * c
 
 
+def decode_google_polyline(polyline_str: str) -> List[List[float]]:
+    """
+    Decodes a Google encoded polyline string into GeoJSON standard [[lon, lat], ...] coordinates.
+    """
+    coords: List[List[float]] = []
+    index = 0
+    lat = 0
+    lng = 0
+    length = len(polyline_str)
+
+    while index < length:
+        shift = 0
+        result = 0
+        while True:
+            b = ord(polyline_str[index]) - 63
+            index += 1
+            result |= (b & 0x1F) << shift
+            shift += 5
+            if b < 0x20:
+                break
+        dlat = ~(result >> 1) if (result & 1) else (result >> 1)
+        lat += dlat
+
+        shift = 0
+        result = 0
+        while True:
+            b = ord(polyline_str[index]) - 63
+            index += 1
+            result |= (b & 0x1F) << shift
+            shift += 5
+            if b < 0x20:
+                break
+        dlng = ~(result >> 1) if (result & 1) else (result >> 1)
+        lng += dlng
+
+        coords.append([lng / 1e5, lat / 1e5])
+
+    return coords
+
+
 def are_routes_meaningfully_distinct(
     coords_a: List[List[float]], coords_b: List[List[float]],
     dist_a: float, dist_b: float,
@@ -62,10 +102,93 @@ def are_routes_meaningfully_distinct(
         lon_a, lat_a = coords_a[mid_idx_a]
         lon_b, lat_b = coords_b[mid_idx_b]
         dev_miles = haversine_distance_miles(lat_a, lon_a, lat_b, lon_b)
-        if dev_miles > 5.0:  # More than 5 miles apart at midpoint
+        if dev_miles > 5.0:
             return True
 
     return False
+
+
+class GoogleDirectionsRoutingService:
+    """Client for Google Maps Directions API."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    def get_route_alternatives(
+        self,
+        start_lat: float,
+        start_lon: float,
+        end_lat: float,
+        end_lon: float,
+        timeout: float = 12.0,
+    ) -> Tuple[List[Dict[str, Any]], str]:
+        """
+        Requests route alternatives from Google Maps Directions API.
+        Formats response into standard normalized structure compatible with checkpoint generator.
+        """
+        url = "https://maps.googleapis.com/maps/api/directions/json"
+        params = {
+            "origin": f"{start_lat:.6f},{start_lon:.6f}",
+            "destination": f"{end_lat:.6f},{end_lon:.6f}",
+            "alternatives": "true",
+            "key": self.api_key,
+        }
+
+        try:
+            resp = requests.get(url, params=params, timeout=timeout)
+            if resp.status_code != 200:
+                raise RoutingError(f"Google Directions API returned HTTP {resp.status_code}: {resp.text[:200]}")
+            data = resp.json()
+        except requests.RequestException as exc:
+            logger.error("Google Directions API connection error: %s", exc)
+            raise RoutingError(f"Network error connecting to Google Directions API: {exc}")
+
+        status = data.get("status")
+        if status != "OK":
+            err_msg = data.get("error_message", f"Google returned status {status}")
+            raise RoutingError(f"Google Directions error ({status}): {err_msg}")
+
+        raw_routes = data.get("routes", [])
+        if not raw_routes:
+            raise RoutingError("Google Directions found no viable routes between specified endpoints.")
+
+        # Normalize Google route structure to match our standard internal route schema
+        normalized_routes: List[Dict[str, Any]] = []
+        for g_route in raw_routes:
+            poly_str = g_route.get("overview_polyline", {}).get("points", "")
+            coords = decode_google_polyline(poly_str)
+
+            legs = g_route.get("legs", [])
+            total_dist_meters = sum(leg.get("distance", {}).get("value", 0) for leg in legs)
+            total_dur_seconds = sum(leg.get("duration", {}).get("value", 0) for leg in legs)
+
+            normalized_legs = []
+            for leg in legs:
+                norm_steps = []
+                for s in leg.get("steps", []):
+                    norm_steps.append({
+                        "distance": s.get("distance", {}).get("value", 0),
+                        "duration": s.get("duration", {}).get("value", 0),
+                    })
+                normalized_legs.append({
+                    "summary": g_route.get("summary", ""),
+                    "steps": norm_steps,
+                })
+
+            normalized_routes.append({
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": coords,
+                },
+                "distance": total_dist_meters,
+                "duration": total_dur_seconds,
+                "legs": normalized_legs,
+                "summary": g_route.get("summary", "Google Highway Route"),
+            })
+
+        count = len(normalized_routes)
+        msg = f"Found {count} distinct route alternative(s) via Google Maps Directions API."
+        return normalized_routes[:3], msg
 
 
 class OSRMRoutingService:
@@ -84,12 +207,7 @@ class OSRMRoutingService:
     ) -> Tuple[List[Dict[str, Any]], str]:
         """
         Requests route alternatives from OSRM.
-
-        Returns:
-            Tuple of (list_of_raw_routes, provider_communication_message)
-            Each raw route dictionary includes geometry, distance, duration, and steps/legs.
         """
-        # Coordinate order for OSRM is longitude,latitude
         coord_str = f"{start_lon:.6f},{start_lat:.6f};{end_lon:.6f},{end_lat:.6f}"
         url = f"{self.base_url}/route/v1/driving/{coord_str}"
         params = {
@@ -135,15 +253,32 @@ class OSRMRoutingService:
             if is_distinct:
                 distinct_routes.append(raw)
 
-        # Honest communication when fewer than 3 routes exist
         count = len(distinct_routes)
         if count == 3:
-            msg = "Found 3 distinct viable route alternatives."
+            msg = "Found 3 distinct viable route alternatives via OSRM."
         elif count == 2:
-            msg = "Found 2 distinct viable route alternatives (provider found no third viable highway route)."
+            msg = "Found 2 distinct viable route alternatives via OSRM (provider found no third viable highway route)."
         elif count == 1:
-            msg = "Found 1 primary route alternative (no viable distinct secondary routes exist for this corridor)."
+            msg = "Found 1 primary route alternative via OSRM (no viable distinct secondary routes exist for this corridor)."
         else:
-            msg = f"Found {count} viable route alternatives."
+            msg = f"Found {count} viable route alternatives via OSRM."
 
         return distinct_routes[:3], msg
+
+
+def get_routing_service():
+    """
+    Factory function to instantiate routing service based on environment configuration.
+    Uses Google Maps Directions if GOOGLE_MAPS_API_KEY is configured or ROUTING_PROVIDER=google;
+    otherwise uses OSRM.
+    """
+    google_key = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+    provider_pref = os.environ.get("ROUTING_PROVIDER", "").strip().lower()
+
+    if google_key or provider_pref == "google":
+        if not google_key:
+            logger.warning("ROUTING_PROVIDER=google specified but GOOGLE_MAPS_API_KEY is empty. Falling back to OSRM.")
+            return OSRMRoutingService()
+        return GoogleDirectionsRoutingService(api_key=google_key)
+
+    return OSRMRoutingService()

@@ -23,7 +23,7 @@ from routing_engine.domain.route_ranking import (
 )
 from routing_engine.services.geocoding_service import geocode_location
 from routing_engine.services.routing_service import (
-    OSRMRoutingService,
+    get_routing_service,
     METERS_TO_MILES,
     ROUTING_PROVIDER_LIMITATION,
 )
@@ -38,10 +38,10 @@ class RouteEvaluationOrchestrator:
 
     def __init__(
         self,
-        routing_service: Optional[OSRMRoutingService] = None,
+        routing_service: Optional[Any] = None,
         weather_service: Optional[OpenMeteoWeatherService] = None,
     ):
-        self.routing_service = routing_service or OSRMRoutingService()
+        self.routing_service = routing_service or get_routing_service()
         self.weather_service = weather_service or OpenMeteoWeatherService()
 
     def evaluate_routes(

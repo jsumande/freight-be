@@ -2,10 +2,12 @@
 Geocoding Service
 
 Resolves user-entered origin and destination strings into geographic coordinates.
-Uses Open-Meteo Geocoding API with OpenStreetMap Nominatim fallback and LRU/dictionary caching.
+Supports Google Geocoding API (when GOOGLE_MAPS_API_KEY is configured),
+with Open-Meteo and OpenStreetMap Nominatim providers.
 """
 
 import logging
+import os
 import re
 from typing import Optional, Dict, Any
 import requests
@@ -38,14 +40,11 @@ def geocode_location(query: str, timeout: float = 6.0) -> Dict[str, Any]:
     """
     Geocodes an address or place name into coordinates and formatted display name.
     
-    Returns:
-        dict: {
-            "query": query,
-            "name": formatted_name,
-            "latitude": float,
-            "longitude": float,
-            "timezone": str,
-        }
+    Checks in order:
+    1. Direct coordinate format (e.g. '41.8781, -87.6298')
+    2. Google Geocoding API (if GOOGLE_MAPS_API_KEY environment variable is set)
+    3. Open-Meteo Geocoding API
+    4. OpenStreetMap Nominatim Fallback
     """
     if not query or not query.strip():
         raise GeocodingError("Location query cannot be empty.")
@@ -54,7 +53,7 @@ def geocode_location(query: str, timeout: float = 6.0) -> Dict[str, Any]:
     if normalized in _GEOCODE_CACHE:
         return _GEOCODE_CACHE[normalized]
 
-    # Check direct coordinate input
+    # 1. Direct coordinate input check
     direct_coord = parse_coordinate_string(query)
     if direct_coord:
         result = {
@@ -63,11 +62,42 @@ def geocode_location(query: str, timeout: float = 6.0) -> Dict[str, Any]:
             "latitude": direct_coord.latitude,
             "longitude": direct_coord.longitude,
             "timezone": "UTC",
+            "provider": "direct_coordinate",
         }
         _GEOCODE_CACHE[normalized] = result
         return result
 
-    # 1. Primary: Open-Meteo Geocoding API
+    # 2. Google Geocoding API (if key is configured)
+    google_api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+    if google_api_key:
+        try:
+            google_url = "https://maps.googleapis.com/maps/api/geocode/json"
+            params = {"address": query.strip(), "key": google_api_key}
+            resp = requests.get(google_url, params=params, timeout=timeout)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("status") == "OK" and data.get("results"):
+                    first = data["results"][0]
+                    loc = first.get("geometry", {}).get("location", {})
+                    lat = float(loc["lat"])
+                    lon = float(loc["lng"])
+                    display_name = first.get("formatted_address", query)
+                    result = {
+                        "query": query,
+                        "name": display_name,
+                        "latitude": lat,
+                        "longitude": lon,
+                        "timezone": "UTC",
+                        "provider": "google",
+                    }
+                    _GEOCODE_CACHE[normalized] = result
+                    return result
+                else:
+                    logger.warning("Google geocoding returned status '%s': %s", data.get("status"), data.get("error_message"))
+        except Exception as exc:
+            logger.warning("Google Geocoding failed for '%s': %s", query, exc)
+
+    # 3. Open-Meteo Geocoding API
     try:
         url = "https://geocoding-api.open-meteo.com/v1/search"
         params = {"name": query.strip(), "count": 1, "language": "en", "format": "json"}
@@ -90,13 +120,14 @@ def geocode_location(query: str, timeout: float = 6.0) -> Dict[str, Any]:
                     "latitude": float(top["latitude"]),
                     "longitude": float(top["longitude"]),
                     "timezone": top.get("timezone", "UTC"),
+                    "provider": "open_meteo",
                 }
                 _GEOCODE_CACHE[normalized] = result
                 return result
     except Exception as exc:
         logger.warning("Open-Meteo geocoding request failed for '%s': %s", query, exc)
 
-    # 2. Fallback: OpenStreetMap Nominatim
+    # 4. Fallback: OpenStreetMap Nominatim
     try:
         nom_url = "https://nominatim.openstreetmap.org/search"
         headers = {"User-Agent": "WeatherAwareTruckRoutingApp/1.0 (commercial-freight-evaluation)"}
@@ -112,6 +143,7 @@ def geocode_location(query: str, timeout: float = 6.0) -> Dict[str, Any]:
                     "latitude": float(top["lat"]),
                     "longitude": float(top["lon"]),
                     "timezone": "UTC",
+                    "provider": "nominatim",
                 }
                 _GEOCODE_CACHE[normalized] = result
                 return result
