@@ -9,7 +9,7 @@ with Open-Meteo and OpenStreetMap Nominatim providers.
 import logging
 import os
 import re
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import requests
 from routing_engine.domain.models import Coordinate
 
@@ -34,6 +34,77 @@ def parse_coordinate_string(query: str) -> Optional[Coordinate]:
         if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
             return Coordinate(latitude=lat, longitude=lon)
     return None
+
+
+def search_locations(query: str, count: int = 5, timeout: float = 5.0) -> List[Dict[str, Any]]:
+    """
+    Searches for matching places/addresses for interactive autocomplete.
+    Returns up to `count` matching places with name, latitude, longitude, and region.
+    """
+    if not query or len(query.strip()) < 2:
+        return []
+
+    cleaned = query.strip()
+    direct_coord = parse_coordinate_string(cleaned)
+    if direct_coord:
+        return [{
+            "name": f"Coordinate ({direct_coord.latitude:.4f}, {direct_coord.longitude:.4f})",
+            "latitude": direct_coord.latitude,
+            "longitude": direct_coord.longitude,
+            "admin": "Custom Pin",
+            "country": "",
+        }]
+
+    try:
+        url = "https://geocoding-api.open-meteo.com/v1/search"
+        params = {"name": cleaned, "count": count, "language": "en", "format": "json"}
+        resp = requests.get(url, params=params, timeout=timeout)
+        if resp.status_code == 200:
+            data = resp.json()
+            results = data.get("results", [])
+            places = []
+            for item in results:
+                name_parts = [item.get("name", "")]
+                admin = item.get("admin1", "")
+                country = item.get("country", "")
+                if admin:
+                    name_parts.append(admin)
+                if country:
+                    name_parts.append(country)
+                places.append({
+                    "name": ", ".join(name_parts),
+                    "latitude": float(item["latitude"]),
+                    "longitude": float(item["longitude"]),
+                    "admin": admin,
+                    "country": country,
+                })
+            if places:
+                return places
+    except Exception as exc:
+        logger.warning("Open-Meteo location search failed for '%s': %s", cleaned, exc)
+
+    # Fallback to Nominatim search
+    try:
+        nom_url = "https://nominatim.openstreetmap.org/search"
+        headers = {"User-Agent": "WeatherAwareTruckRoutingApp/1.0 (commercial-freight-evaluation)"}
+        params = {"q": cleaned, "format": "json", "limit": count}
+        resp = requests.get(nom_url, params=params, headers=headers, timeout=timeout)
+        if resp.status_code == 200:
+            data = resp.json()
+            places = []
+            for item in data:
+                places.append({
+                    "name": item.get("display_name", cleaned),
+                    "latitude": float(item["lat"]),
+                    "longitude": float(item["lon"]),
+                    "admin": "",
+                    "country": "",
+                })
+            return places
+    except Exception as exc:
+        logger.warning("Nominatim location search failed for '%s': %s", cleaned, exc)
+
+    return []
 
 
 def geocode_location(query: str, timeout: float = 6.0) -> Dict[str, Any]:

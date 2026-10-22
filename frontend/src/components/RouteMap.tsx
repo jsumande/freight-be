@@ -11,6 +11,9 @@ interface RouteMapProps {
   onSelectRoute: (routeId: string) => void;
   selectedCheckpoint: RouteCheckpoint | null;
   onSelectCheckpoint: (checkpoint: RouteCheckpoint) => void;
+  isPickingLocation?: "origin" | "destination" | null;
+  onMapClickLocation?: (lat: number, lon: number) => void;
+  onCancelPickLocation?: () => void;
 }
 
 type OverlayMode = "risk" | "wind" | "precip" | "none";
@@ -47,6 +50,9 @@ export const RouteMap: React.FC<RouteMapProps> = ({
   onSelectRoute,
   selectedCheckpoint,
   onSelectCheckpoint,
+  isPickingLocation = null,
+  onMapClickLocation,
+  onCancelPickLocation,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -57,6 +63,29 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
   // Overlay visualization mode (defaults to Risk Corridor Heatmap)
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("risk");
+
+  // Handle map click when in location picking mode
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (isPickingLocation) {
+      L.DomUtil.addClass(map.getContainer(), "cursor-crosshair");
+    } else {
+      L.DomUtil.removeClass(map.getContainer(), "cursor-crosshair");
+    }
+
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      if (isPickingLocation && onMapClickLocation) {
+        onMapClickLocation(e.latlng.lat, e.latlng.lng);
+      }
+    };
+
+    map.on("click", handleMapClick);
+    return () => {
+      map.off("click", handleMapClick);
+    };
+  }, [isPickingLocation, onMapClickLocation]);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -306,6 +335,25 @@ export const RouteMap: React.FC<RouteMapProps> = ({
   return (
     <div className="relative w-full h-full min-h-[460px] rounded-lg overflow-hidden border border-slate-200 shadow-inner">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
+
+      {/* Location Picking Mode Banner */}
+      {isPickingLocation && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-rose-600 text-white px-4 py-2 rounded-full shadow-lg border border-white flex items-center gap-3 text-xs font-bold animate-bounce">
+          <span>
+            📍 Click anywhere on the map to set{" "}
+            {isPickingLocation === "origin" ? "Origin (Point A)" : "Destination (Point B)"}
+          </span>
+          {onCancelPickLocation && (
+            <button
+              type="button"
+              onClick={onCancelPickLocation}
+              className="bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Floating Top-Right Overlay Selector */}
       <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1.5 rounded-lg shadow-md border border-slate-200 text-xs">

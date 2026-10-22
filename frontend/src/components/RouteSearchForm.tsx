@@ -1,10 +1,23 @@
-import React, { useState } from "react";
+import React from "react";
 import type { CalculateRouteParams } from "../api";
+import { AddressAutocompleteInput } from "./AddressAutocompleteInput";
 import { Truck, Navigation, Calendar, Weight, Sliders, Play, RotateCcw } from "lucide-react";
 
 interface RouteSearchFormProps {
+  origin: string;
+  setOrigin: (val: string) => void;
+  destination: string;
+  setDestination: (val: string) => void;
+  departureTime: string;
+  setDepartureTime: (val: string) => void;
+  cargoWeightLbs: number;
+  setCargoWeightLbs: (val: number) => void;
+  intervalMiles: number;
+  setIntervalMiles: (val: number) => void;
   onSearch: (params: CalculateRouteParams) => void;
   isLoading: boolean;
+  isPickingOnMap: "origin" | "destination" | null;
+  onTogglePickOnMap: (target: "origin" | "destination") => void;
 }
 
 const PRESET_CORRIDORS = [
@@ -13,18 +26,22 @@ const PRESET_CORRIDORS = [
   { name: "Dallas → Kansas City (550 mi)", origin: "Dallas, TX", destination: "Kansas City, MO", weight: 32000 },
 ];
 
-export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({ onSearch, isLoading }) => {
-  const [origin, setOrigin] = useState("Chicago, IL");
-  const [destination, setDestination] = useState("Milwaukee, WI");
-  const [departureTime, setDepartureTime] = useState(() => {
-    const now = new Date();
-    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-  });
-  const [cargoWeightLbs, setCargoWeightLbs] = useState(35000);
-  const [intervalMiles, setIntervalMiles] = useState<number>(25);
-
+export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({
+  origin,
+  setOrigin,
+  destination,
+  setDestination,
+  departureTime,
+  setDepartureTime,
+  cargoWeightLbs,
+  setCargoWeightLbs,
+  intervalMiles,
+  setIntervalMiles,
+  onSearch,
+  isLoading,
+  isPickingOnMap,
+  onTogglePickOnMap,
+}) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!origin.trim() || !destination.trim()) return;
@@ -75,35 +92,27 @@ export const RouteSearchForm: React.FC<RouteSearchFormProps> = ({ onSearch, isLo
         </div>
       </div>
 
-      {/* Origin & Destination Grid */}
+      {/* Origin & Destination Autocomplete Inputs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-            <Navigation className="w-3.5 h-3.5 text-emerald-600" /> Origin Location
-          </label>
-          <input
-            type="text"
-            required
-            value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
-            placeholder="e.g. Chicago, IL or 41.8781, -87.6298"
-            className="w-full text-xs px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        </div>
+        <AddressAutocompleteInput
+          label="Origin Location"
+          value={origin}
+          onChange={(val) => setOrigin(val)}
+          placeholder="Type address, city or click Pin..."
+          icon={<Navigation className="w-3.5 h-3.5 text-emerald-600" />}
+          onTogglePickOnMap={() => onTogglePickOnMap("origin")}
+          isPickingOnMap={isPickingOnMap === "origin"}
+        />
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-            <Navigation className="w-3.5 h-3.5 text-rose-600" /> Destination Location
-          </label>
-          <input
-            type="text"
-            required
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder="e.g. Milwaukee, WI"
-            className="w-full text-xs px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        </div>
+        <AddressAutocompleteInput
+          label="Destination Location"
+          value={destination}
+          onChange={(val) => setDestination(val)}
+          placeholder="Type address, city or click Pin..."
+          icon={<Navigation className="w-3.5 h-3.5 text-rose-600" />}
+          onTogglePickOnMap={() => onTogglePickOnMap("destination")}
+          isPickingOnMap={isPickingOnMap === "destination"}
+        />
       </div>
 
       {/* Departure Time & Cargo Weight */}

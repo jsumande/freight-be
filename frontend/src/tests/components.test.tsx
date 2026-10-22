@@ -10,7 +10,24 @@ import type { RouteAlternative, RouteCheckpoint, RecommendationVerdict } from ".
 describe("Frontend Component Suite", () => {
   it("renders search form and triggers submit with accurate parameters", () => {
     const handleSearch = vi.fn();
-    render(<RouteSearchForm onSearch={handleSearch} isLoading={false} />);
+    render(
+      <RouteSearchForm
+        origin="Chicago, IL"
+        setOrigin={vi.fn()}
+        destination="Milwaukee, WI"
+        setDestination={vi.fn()}
+        departureTime="2026-10-23T08:00"
+        setDepartureTime={vi.fn()}
+        cargoWeightLbs={35000}
+        setCargoWeightLbs={vi.fn()}
+        intervalMiles={25}
+        setIntervalMiles={vi.fn()}
+        onSearch={handleSearch}
+        isLoading={false}
+        isPickingOnMap={null}
+        onTogglePickOnMap={vi.fn()}
+      />
+    );
 
     expect(screen.getByText("Trip & Cargo Parameters")).toBeDefined();
     const submitBtn = screen.getByText("Evaluate Route Safety");

@@ -31,6 +31,21 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Form input state lifted for map integration
+  const [origin, setOrigin] = useState("Chicago, IL");
+  const [destination, setDestination] = useState("Milwaukee, WI");
+  const [departureTime, setDepartureTime] = useState(() => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  });
+  const [cargoWeightLbs, setCargoWeightLbs] = useState(35000);
+  const [intervalMiles, setIntervalMiles] = useState<number>(25);
+
+  // Map pin picking mode
+  const [isPickingOnMap, setIsPickingOnMap] = useState<"origin" | "destination" | null>(null);
+
   // Timeline slider state (0 to 48 hours)
   const [timelineOffset, setTimelineOffset] = useState<number>(0);
   const [isTimelineLoading, setIsTimelineLoading] = useState<boolean>(false);
@@ -38,6 +53,16 @@ export function App() {
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRequestIdRef = useRef<number>(0);
+
+  const handleMapClickLocation = (lat: number, lon: number) => {
+    const coordStr = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    if (isPickingOnMap === "origin") {
+      setOrigin(coordStr);
+    } else if (isPickingOnMap === "destination") {
+      setDestination(coordStr);
+    }
+    setIsPickingOnMap(null);
+  };
 
   const handleSearch = async (params: CalculateRouteParams) => {
     setIsLoading(true);
@@ -215,7 +240,24 @@ export function App() {
         {/* Input Parameters & Recommendation Row */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-5 space-y-4">
-            <RouteSearchForm onSearch={handleSearch} isLoading={isLoading} />
+            <RouteSearchForm
+              origin={origin}
+              setOrigin={setOrigin}
+              destination={destination}
+              setDestination={setDestination}
+              departureTime={departureTime}
+              setDepartureTime={setDepartureTime}
+              cargoWeightLbs={cargoWeightLbs}
+              setCargoWeightLbs={setCargoWeightLbs}
+              intervalMiles={intervalMiles}
+              setIntervalMiles={setIntervalMiles}
+              onSearch={handleSearch}
+              isLoading={isLoading}
+              isPickingOnMap={isPickingOnMap}
+              onTogglePickOnMap={(target) =>
+                setIsPickingOnMap((prev) => (prev === target ? null : target))
+              }
+            />
           </div>
 
           <div className="lg:col-span-7 space-y-4">
@@ -265,6 +307,9 @@ export function App() {
               onSelectRoute={(id) => setSelectedRouteId(id)}
               selectedCheckpoint={selectedCheckpoint}
               onSelectCheckpoint={(cp) => setSelectedCheckpoint(cp)}
+              isPickingLocation={isPickingOnMap}
+              onMapClickLocation={handleMapClickLocation}
+              onCancelPickLocation={() => setIsPickingOnMap(null)}
             />
           </div>
 

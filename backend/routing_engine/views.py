@@ -14,7 +14,7 @@ from routing_engine.serializers import (
     TimelineReevaluationRequestSerializer,
 )
 from routing_engine.services.orchestrator import RouteEvaluationOrchestrator
-from routing_engine.services.geocoding_service import GeocodingError
+from routing_engine.services.geocoding_service import geocode_location, search_locations, GeocodingError
 from routing_engine.services.routing_service import RoutingError
 from routing_engine.services.weather_service import OpenMeteoWeatherService, WeatherProviderError
 from routing_engine.domain.models import Coordinate, RouteCheckpoint
@@ -35,6 +35,35 @@ class HealthCheckView(APIView):
     )
     def get(self, request):
         return Response({"status": "healthy", "service": "weather-aware-truck-routing-api"})
+
+
+class LocationSearchView(APIView):
+    """
+    GET /api/geocoding/search/?q={query}
+    Autocomplete location search returning geographic suggestions for origin and destination inputs.
+    """
+
+    @extend_schema(
+        summary="Search Address & Location Suggestions",
+        description="Returns place/city suggestions based on map geocoding for interactive origin and destination search.",
+        tags=["Routing & Weather Risk"],
+        parameters=[
+            {
+                "name": "q",
+                "type": str,
+                "in": "query",
+                "required": True,
+                "description": "Location name, address, or partial search text (min 2 chars)",
+            }
+        ],
+        responses={
+            200: OpenApiResponse(description="List of matching locations with coordinates and formatted names."),
+        },
+    )
+    def get(self, request):
+        query = request.query_params.get("q", "")
+        results = search_locations(query, count=5)
+        return Response({"query": query, "results": results})
 
 
 class RouteCalculationView(APIView):

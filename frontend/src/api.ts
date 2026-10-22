@@ -12,6 +12,14 @@ export const apiClient = axios.create({
   },
 });
 
+export interface LocationSearchResult {
+  name: string;
+  latitude: number;
+  longitude: number;
+  admin: string;
+  country: string;
+}
+
 export interface CalculateRouteParams {
   origin: string;
   destination: string;
@@ -31,6 +39,19 @@ export interface TimelineUpdateResponse {
   offset_hours: number;
   metrics: RouteMetrics;
   checkpoints: RouteCheckpoint[];
+}
+
+export async function searchLocations(query: string): Promise<LocationSearchResult[]> {
+  if (!query || query.trim().length < 2) return [];
+  try {
+    const response = await apiClient.get<{ results: LocationSearchResult[] }>("/api/geocoding/search/", {
+      params: { q: query.trim() },
+    });
+    return response.data.results || [];
+  } catch (err) {
+    console.warn("Location search error:", err);
+    return [];
+  }
 }
 
 export async function fetchRouteEvaluation(params: CalculateRouteParams): Promise<RouteCalculationResponse> {
