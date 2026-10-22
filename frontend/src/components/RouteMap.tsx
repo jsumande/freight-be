@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RouteAlternative, RouteCheckpoint } from "../types";
-
 import { getRiskColor } from "../utils/colors";
+import { Flame, Wind, CloudRain, EyeOff, Layers } from "lucide-react";
 
 interface RouteMapProps {
   routes: RouteAlternative[];
@@ -13,11 +13,33 @@ interface RouteMapProps {
   onSelectCheckpoint: (checkpoint: RouteCheckpoint) => void;
 }
 
+type OverlayMode = "risk" | "wind" | "precip" | "none";
+
 const ROUTE_PALETTE = [
   { stroke: "#2563eb", name: "Blue" },
   { stroke: "#8b5cf6", name: "Purple" },
   { stroke: "#0d9488", name: "Teal" },
 ];
+
+function getWindColor(mph: number | null): string {
+  if (mph === null) return "#94a3b8";
+  if (mph < 15) return "#38bdf8"; // Light Blue
+  if (mph < 25) return "#10b981"; // Emerald
+  if (mph < 35) return "#f59e0b"; // Amber
+  if (mph < 45) return "#f97316"; // Orange
+  if (mph < 55) return "#ef4444"; // Red
+  return "#7f1d1d"; // Deep Maroon
+}
+
+function getPrecipColor(rain: number | null, snow: number | null): string {
+  const total = (rain || 0) + (snow || 0);
+  if (total <= 0.001) return "#94a3b8";
+  if (total < 0.1) return "#38bdf8";
+  if (total < 0.25) return "#6366f1";
+  if (total < 0.5) return "#8b5cf6";
+  if (total <= 1.0) return "#ec4899";
+  return "#991b1b";
+}
 
 export const RouteMap: React.FC<RouteMapProps> = ({
   routes,
@@ -28,9 +50,13 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const polylinesLayerRef = useRef<L.LayerGroup | null>(null);
   const checkpointsLayerRef = useRef<L.LayerGroup | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+
+  // Overlay visualization mode (defaults to Risk Corridor Heatmap)
+  const [overlayMode, setOverlayMode] = useState<OverlayMode>("risk");
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -49,6 +75,8 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       maxZoom: 19,
     }).addTo(map);
 
+    // Order of layer groups: Heatmap corridor (bottom) -> Polylines -> Checkpoints -> Markers (top)
+    heatmapLayerRef.current = L.layerGroup().addTo(map);
     polylinesLayerRef.current = L.layerGroup().addTo(map);
     checkpointsLayerRef.current = L.layerGroup().addTo(map);
     markersLayerRef.current = L.layerGroup().addTo(map);
@@ -61,13 +89,20 @@ export const RouteMap: React.FC<RouteMapProps> = ({
     };
   }, []);
 
-  // Update polylines and markers when routes or selection changes
+  // Update polylines, heatmap corridor, and markers when routes or overlayMode changes
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !polylinesLayerRef.current || !checkpointsLayerRef.current || !markersLayerRef.current) {
+    if (
+      !map ||
+      !heatmapLayerRef.current ||
+      !polylinesLayerRef.current ||
+      !checkpointsLayerRef.current ||
+      !markersLayerRef.current
+    ) {
       return;
     }
 
+    heatmapLayerRef.current.clearLayers();
     polylinesLayerRef.current.clearLayers();
     checkpointsLayerRef.current.clearLayers();
     markersLayerRef.current.clearLayers();
@@ -76,7 +111,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
     const bounds = L.latLngBounds([]);
 
-    // 1. Draw route alternatives
+    // 1. Draw route alternatives base lines
     routes.forEach((route, idx) => {
       const isSelected = route.id === selectedRouteId;
       const palette = ROUTE_PALETTE[idx % ROUTE_PALETTE.length];
@@ -86,11 +121,11 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
       coords.forEach((c) => bounds.extend(c));
 
-      // Polyline styling
+      // Core highway line
       const polyline = L.polyline(coords, {
         color: isSelected ? palette.stroke : "#94a3b8",
-        weight: isSelected ? 6 : 3.5,
-        opacity: isSelected ? 0.95 : 0.6,
+        weight: isSelected ? 5 : 3.5,
+        opacity: isSelected ? 0.95 : 0.5,
         dashArray: isSelected ? undefined : "6, 8",
         lineCap: "round",
         lineJoin: "round",
@@ -108,8 +143,74 @@ export const RouteMap: React.FC<RouteMapProps> = ({
       polylinesLayerRef.current?.addLayer(polyline);
     });
 
-    // 2. Draw checkpoints for selected route
     const activeRoute = routes.find((r) => r.id === selectedRouteId) || routes[0];
+
+    // 2. Draw Weather Corridor Heatmap Overlay (if enabled)
+    if (activeRoute && activeRoute.checkpoints && overlayMode !== "none") {
+      const cps = activeRoute.checkpoints;
+
+      // Draw corridor heat halo buffer along checkpoint segments
+      for (let i = 0; i < cps.length; i++) {
+        const cp = cps[i];
+
+        let heatColor: string;
+        let tooltipText: string;
+
+        if (overlayMode === "risk") {
+          heatColor = getRiskColor(cp.risk.overall_risk);
+          tooltipText = `Corridor Risk: ${cp.risk.overall_risk}`;
+        } else if (overlayMode === "wind") {
+          heatColor = getWindColor(cp.weather.wind_speed_mph);
+          tooltipText = `Wind Speed: ${cp.weather.wind_speed_mph ?? 0} mph`;
+        } else {
+          // precip
+          heatColor = getPrecipColor(cp.weather.rainfall_in_hr, cp.weather.snowfall_in_hr);
+          tooltipText = `Precipitation: ${cp.weather.rainfall_in_hr ?? 0} in/hr rain, ${cp.weather.snowfall_in_hr ?? 0} in/hr snow`;
+        }
+
+        // A. Continuous wide corridor heat ribbon between consecutive checkpoints
+        if (i < cps.length - 1) {
+          const nextCp = cps[i + 1];
+          const segmentLine = L.polyline(
+            [
+              [cp.latitude, cp.longitude],
+              [nextCp.latitude, nextCp.longitude],
+            ],
+            {
+              color: heatColor,
+              weight: 18,
+              opacity: 0.5,
+              lineCap: "round",
+              lineJoin: "round",
+            }
+          );
+          segmentLine.bindTooltip(
+            `<strong>Weather Corridor (Mile ${cp.cumulative_miles.toFixed(0)} - ${nextCp.cumulative_miles.toFixed(0)})</strong><br/>${tooltipText}`,
+            { sticky: true }
+          );
+          heatmapLayerRef.current.addLayer(segmentLine);
+        }
+
+        // B. Radial Weather Hazard Footprint (Heat Halo) around checkpoint
+        const haloRadiusMeters = cp.risk.overall_risk === "NO_TRAVEL" ? 28000 : 18000;
+        const heatHalo = L.circle([cp.latitude, cp.longitude], {
+          radius: haloRadiusMeters,
+          fillColor: heatColor,
+          fillOpacity: cp.risk.overall_risk === "NO_TRAVEL" ? 0.35 : 0.2,
+          stroke: true,
+          color: heatColor,
+          weight: 1.5,
+          opacity: 0.6,
+        });
+        heatHalo.bindTooltip(
+          `<strong>Checkpoint ${cp.index} Footprint</strong><br/>${tooltipText}`,
+          { sticky: true }
+        );
+        heatmapLayerRef.current.addLayer(heatHalo);
+      }
+    }
+
+    // 3. Draw Checkpoint Pin Markers for selected route
     if (activeRoute && activeRoute.checkpoints) {
       activeRoute.checkpoints.forEach((cp) => {
         const isSelected = selectedCheckpoint?.index === cp.index;
@@ -170,7 +271,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({
         checkpointsLayerRef.current?.addLayer(marker);
       });
 
-      // 3. Add Origin and Destination Endpoints
+      // 4. Add Origin and Destination Endpoints
       const startCoord = activeRoute.geometry.coordinates[0];
       const endCoord = activeRoute.geometry.coordinates[activeRoute.geometry.coordinates.length - 1];
 
@@ -200,39 +301,166 @@ export const RouteMap: React.FC<RouteMapProps> = ({
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
-  }, [routes, selectedRouteId, selectedCheckpoint, onSelectRoute, onSelectCheckpoint]);
+  }, [routes, selectedRouteId, selectedCheckpoint, overlayMode, onSelectRoute, onSelectCheckpoint]);
 
   return (
     <div className="relative w-full h-full min-h-[460px] rounded-lg overflow-hidden border border-slate-200 shadow-inner">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Floating Map Legend */}
+      {/* Floating Top-Right Overlay Selector */}
+      <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1.5 rounded-lg shadow-md border border-slate-200 text-xs">
+        <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 px-1 flex items-center gap-1">
+          <Layers className="w-3 h-3 text-blue-600" /> Corridor Overlay
+        </div>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setOverlayMode("risk")}
+            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+              overlayMode === "risk"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+            }`}
+            title="Show overall risk level corridor heatmap"
+          >
+            <Flame className="w-3.5 h-3.5" />
+            <span>Risk Heatmap</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOverlayMode("wind")}
+            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+              overlayMode === "wind"
+                ? "bg-cyan-600 text-white shadow-xs"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+            }`}
+            title="Show wind speed corridor heatmap"
+          >
+            <Wind className="w-3.5 h-3.5" />
+            <span>Wind Heat</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOverlayMode("precip")}
+            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+              overlayMode === "precip"
+                ? "bg-indigo-600 text-white shadow-xs"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+            }`}
+            title="Show rainfall & snowfall corridor heatmap"
+          >
+            <CloudRain className="w-3.5 h-3.5" />
+            <span>Precipitation</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOverlayMode("none")}
+            className={`px-2 py-1 rounded flex items-center gap-1 font-semibold transition-colors ${
+              overlayMode === "none"
+                ? "bg-slate-800 text-white shadow-xs"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+            }`}
+            title="Hide corridor heatmap overlay"
+          >
+            <EyeOff className="w-3.5 h-3.5" />
+            <span>Off</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Bottom-Left Map Legend */}
       <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md px-3 py-2.5 rounded-lg shadow-md border border-slate-200 text-xs text-slate-700 pointer-events-auto">
         <div className="font-semibold text-slate-900 mb-1.5 flex items-center justify-between">
-          <span>Hazard Risk Legend</span>
+          <span>
+            {overlayMode === "wind"
+              ? "Wind Speed Gradient"
+              : overlayMode === "precip"
+              ? "Precipitation Gradient"
+              : "Hazard Risk Corridor Legend"}
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
-            <span>Low Risk</span>
+
+        {overlayMode === "wind" ? (
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#38bdf8] inline-block" />
+              <span>&lt; 15 mph</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+              <span>15–25 mph</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+              <span>25–35 mph</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-orange-500 inline-block" />
+              <span>35–45 mph</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+              <span>45–55 mph</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300" />
+              <span className="font-bold text-red-950">&ge; 55 mph</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
-            <span>Moderate</span>
+        ) : overlayMode === "precip" ? (
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#94a3b8] inline-block" />
+              <span>Dry / Clear</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#38bdf8] inline-block" />
+              <span>Light (&lt;0.10 in)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#6366f1] inline-block" />
+              <span>0.10–0.25 in</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#8b5cf6] inline-block" />
+              <span>0.25–0.50 in</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#ec4899] inline-block" />
+              <span>0.50–1.00 in</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#991b1b] inline-block ring-2 ring-red-300" />
+              <span className="font-bold text-red-950">&gt; 1.00 in/hr</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-orange-500 inline-block" />
-            <span>High Risk</span>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+              <span>Low Risk</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+              <span>Moderate</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-orange-500 inline-block" />
+              <span>High Risk</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+              <span>Severe</span>
+            </div>
+            <div className="flex items-center gap-1.5 col-span-2">
+              <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300" />
+              <span className="font-semibold text-red-950">No Travel (&ge;55 mph / weight override)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
-            <span>Severe</span>
-          </div>
-          <div className="flex items-center gap-1.5 col-span-2">
-            <span className="w-3 h-3 rounded-full bg-[#7f1d1d] inline-block ring-2 ring-red-300" />
-            <span className="font-semibold text-red-950">No Travel (&gt;=55 mph / weight override)</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
