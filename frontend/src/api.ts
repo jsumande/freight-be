@@ -1,6 +1,16 @@
+import axios, { isAxiosError } from "axios";
 import type { RouteCalculationResponse, RouteCheckpoint, RouteMetrics } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4040";
+
+// Dedicated Axios client instance
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 export interface CalculateRouteParams {
   origin: string;
@@ -24,37 +34,38 @@ export interface TimelineUpdateResponse {
 }
 
 export async function fetchRouteEvaluation(params: CalculateRouteParams): Promise<RouteCalculationResponse> {
-  const resp = await fetch(`${API_BASE_URL}/api/routes/calculate/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-
-  if (!resp.ok) {
-    const errorData = await resp.json().catch(() => ({}));
-    const message = errorData.message || errorData.error || (errorData.details ? JSON.stringify(errorData.details) : `Server responded with status ${resp.status}`);
-    throw new Error(message);
+  try {
+    const response = await apiClient.post<RouteCalculationResponse>("/api/routes/calculate/", params);
+    return response.data;
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response) {
+      const data = error.response.data as Record<string, any>;
+      const message =
+        data.message ||
+        data.error ||
+        (data.details ? JSON.stringify(data.details) : `Server error: ${error.response.status}`);
+      throw new Error(message);
+    }
+    if (isAxiosError(error) && error.request) {
+      throw new Error("Unable to connect to the routing backend. Verify the Django server is running on port 4040.");
+    }
+    throw error;
   }
-
-  return resp.json();
 }
 
 export async function fetchTimelineUpdate(params: TimelineUpdateParams): Promise<TimelineUpdateResponse> {
-  const resp = await fetch(`${API_BASE_URL}/api/routes/forecast-timeline/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-
-  if (!resp.ok) {
-    const errorData = await resp.json().catch(() => ({}));
-    const message = errorData.message || errorData.error || `Timeline update error ${resp.status}`;
-    throw new Error(message);
+  try {
+    const response = await apiClient.post<TimelineUpdateResponse>("/api/routes/forecast-timeline/", params);
+    return response.data;
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response) {
+      const data = error.response.data as Record<string, any>;
+      const message =
+        data.message ||
+        data.error ||
+        (data.details ? JSON.stringify(data.details) : `Server error: ${error.response.status}`);
+      throw new Error(message);
+    }
+    throw error;
   }
-
-  return resp.json();
 }
