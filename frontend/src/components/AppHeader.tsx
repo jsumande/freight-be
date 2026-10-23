@@ -1,4 +1,5 @@
 import React from "react";
+import { API_BASE_URL } from "../api";
 import {
   Truck,
   Shield,
@@ -62,7 +63,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isLoading, onOpenRules }) 
 
           {/* Swagger API Docs Link */}
           <a
-            href="http://127.0.0.1:4040/api/docs/"
+            href={`${API_BASE_URL}/api/docs/`}
             target="_blank"
             rel="noreferrer"
             className="hidden sm:inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3 h-9 rounded-md border border-slate-700 transition-colors"

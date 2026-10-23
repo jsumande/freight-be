@@ -1,7 +1,7 @@
 import axios, { isAxiosError } from "axios";
 import type { RouteCalculationResponse, RouteCheckpoint, RouteMetrics } from "./types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4040";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4040";
 
 // Dedicated Axios client instance
 export const apiClient = axios.create({
