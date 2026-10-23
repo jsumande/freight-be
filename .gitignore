@@ -5,6 +5,8 @@ __pycache__/
 *.sqlite3
 .venv/
 .env
+!frontend/.env
+!frontend/.env.example
 
 # Testing & Coverage
 .pytest_cache/
